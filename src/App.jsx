@@ -32,8 +32,8 @@ export default function App() {
     <Routes>
       <Route path="/faq" element={<FAQ />} />
 
-      <Route path="/" element={<LanguageSelect />} />
-      <Route path="/landing" element={<Landing />} />
+      <Route path="/language" element={<LanguageSelect />} />
+       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/waiting-approval" element={<WaitingApproval />} />
