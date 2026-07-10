@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Check, X, User } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from "../../lib/supabaseClient";
 
 export default function AdminApprovals() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

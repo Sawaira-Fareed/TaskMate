@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Clock, AlertTriangle, Zap, Wrench, Plug, ShoppingBag, Monitor, MapPin, Calendar, DollarSign, Mic, Send, Square } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/auth'
+import { supabase } from '@/lib/supabaseClient'
+import { getCurrentUser } from '@/lib/auth'
 
 const STEPS = ['Priority', 'Service', 'Details', 'Review']
 

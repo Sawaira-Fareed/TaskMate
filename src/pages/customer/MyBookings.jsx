@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Star, Calendar, MapPin, ChevronRight } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import { getCurrentUser } from '@/lib/auth'
 
 export default function MyBookings() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Bell, Check } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import { getCurrentUser } from '@/lib/auth'
 
 export default function CustomerNotifications() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

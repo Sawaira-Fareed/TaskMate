@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, MapPin, Calendar, DollarSign, Check, X, Clock } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import { getCurrentUser } from '@/lib/auth'
 
 export default function ProviderRequestDetail() {
   const { id } = useParams()

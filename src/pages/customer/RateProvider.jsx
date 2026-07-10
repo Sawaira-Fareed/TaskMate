@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Star, Send } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from "../../lib/supabaseClient";
 
 export default function RateProvider() {
   const { id } = useParams()

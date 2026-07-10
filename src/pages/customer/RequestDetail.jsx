@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Clock, MapPin, DollarSign, Calendar, CheckCircle, XCircle } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase } from "../../lib/supabaseClient";
 
 export default function RequestDetail() {
   const { id } = useParams()

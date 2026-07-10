@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, Shield, CheckCircle, LogOut } from 'lucide-react'
-import { signOut } from '../lib/auth'
+import { signOut } from '@/lib/auth'
 
 export default function WaitingApproval() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

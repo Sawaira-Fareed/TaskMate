@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Users, UserCheck, Clock, CheckCircle, XCircle, LogOut, Home, ClipboardList, Settings } from 'lucide-react'
-import { getCurrentUser, signOut } from '../lib/auth'
-import { supabase } from '../lib/supabaseClient'
-import ThemeToggle from '../components/ThemeToggle'
+import { getCurrentUser, signOut } from '@/lib/auth'
+import { supabase } from '@/lib/supabaseClient'
+import ThemeToggle from '@/components/ThemeToggle'
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, User, Briefcase, Camera, FileText, UserPlus } from 'lucide-react'
-import { signUp } from '../lib/auth'
+import { signUp } from '@/lib/auth'
 
 const STEPS = ['Role', 'Info', 'Details', 'Review']
 

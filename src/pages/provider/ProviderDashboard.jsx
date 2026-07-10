@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Clock, CheckCircle, XCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Settings } from 'lucide-react'
-import { getCurrentUser, signOut } from '../lib/auth'
-import { supabase } from '../lib/supabaseClient'
-import ThemeToggle from '../components/ThemeToggle'
+import { getCurrentUser, signOut } from '@/lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import ThemeToggle from '@/components/ThemeToggle'
 export default function ProviderDashboard() {
   const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

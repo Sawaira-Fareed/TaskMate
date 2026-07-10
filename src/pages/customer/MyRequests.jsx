@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, CheckCircle, XCircle, AlertTriangle, ChevronRight, ArrowLeft } from 'lucide-react'
-import { supabase } from '../lib/supabaseClient'
-import { getCurrentUser } from '../lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import { getCurrentUser } from '@/lib/auth'
 
 export default function MyRequests() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')

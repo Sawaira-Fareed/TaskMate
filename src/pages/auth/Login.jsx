@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
-import { signIn } from '../lib/auth'
+import { signIn } from '@/lib/auth'
 
 export default function Login() {
   const navigate = useNavigate()

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, User, Mail, Phone, MapPin, LogOut } from 'lucide-react'
-import { getCurrentUser, signOut } from '../lib/auth'
+import { getCurrentUser, signOut } from '@/lib/auth'
 import { useNavigate } from 'react-router-dom'
 
 export default function CustomerProfile() {

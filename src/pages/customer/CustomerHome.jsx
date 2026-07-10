@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, Clock, CheckCircle, XCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Settings, Search } from 'lucide-react'
-import { getCurrentUser, signOut } from '../lib/auth'
-import { supabase } from '../lib/supabaseClient'
-import ThemeToggle from '../components/ThemeToggle'
+import { getCurrentUser, signOut } from '@/lib/auth'
+import { supabase } from "../../lib/supabaseClient";
+import ThemeToggle from '@/components/ThemeToggle'
 
 
 export default function CustomerHome() {
