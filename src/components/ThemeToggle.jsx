@@ -1,13 +1,29 @@
 import { Moon, Sun } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function ThemeToggle() {
-  const [dark, setDark] = useState(
-    document.documentElement.classList.contains('dark')
-  )
+  const [dark, setDark] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('zaria-theme')
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark')
+      setDark(true)
+    } else if (saved === 'light') {
+      document.documentElement.classList.remove('dark')
+      setDark(false)
+    } else {
+      // No saved preference — use system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      if (prefersDark) {
+        document.documentElement.classList.add('dark')
+        setDark(true)
+      }
+    }
+  }, [])
 
   const toggle = () => {
-    if (document.documentElement.classList.contains('dark')) {
+    if (dark) {
       document.documentElement.classList.remove('dark')
       localStorage.setItem('zaria-theme', 'light')
       setDark(false)

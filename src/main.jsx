@@ -4,11 +4,6 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
 
-// Check saved theme on load
-if (localStorage.getItem('zaria-theme') === 'dark') {
-  document.documentElement.classList.add('dark')
-}
-
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
