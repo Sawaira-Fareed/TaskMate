@@ -31,10 +31,10 @@ export default function AdminDashboard() {
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
   const sidebarLinks = [
-    { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), active: true, path: '/admin-dashboard' },
-    { icon: UserCheck, label: t('Approvals', 'منظوریاں'), path: '/admin-approvals' },
-    { icon: Settings, label: t('Platform', 'پلیٹ فارم'), path: '/admin-platform' },
-  ]
+  { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), active: true, path: '/admin/dashboard' },
+  { icon: UserCheck, label: t('Approvals', 'منظوریاں'), path: '/admin/approvals' },
+  { icon: Settings, label: t('Platform', 'پلیٹ فارم'), path: '/admin/platform' },
+]
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
 
@@ -44,8 +44,8 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-100"><div className="w-9 h-9 bg-purple-600 flex items-center justify-center"><span className="text-white font-bold text-sm">Z</span></div>{sidebarOpen && <span className="text-lg font-bold text-gray-900">Admin</span>}</div>
         <nav className="p-3 space-y-1">
           {sidebarLinks.map((link, i) => (
-            <Link key={i} to={link.path} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}><link.icon className="w-5 h-5" />{sidebarOpen && <span>{link.label}</span>}</Link>
-          ))}
+  <Link key={i} to={link.path} replace className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}><link.icon className="w-5 h-5" />{sidebarOpen && <span>{link.label}</span>}</Link>
+))}
         </nav>
         <div className="absolute bottom-4 left-0 right-0 px-3"><button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 "><LogOut className="w-5 h-5" />{sidebarOpen && <span>{t('Sign Out', 'سائن آؤٹ')}</span>}</button></div>
       </aside>

@@ -1,393 +1,743 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, User, Briefcase, Camera, FileText, UserPlus } from 'lucide-react'
-import { signUp } from '@/lib/auth'
+// src/pages/auth/Register.jsx
+import { useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../../lib/supabaseClient';
+import { useAuthStore, useProviderStore, useCustomerStore } from '../../store/authStore';
+import { Camera, Upload, ArrowLeft, ArrowRight, Check, X, Eye, EyeOff } from 'lucide-react';
 
-const STEPS = ['Role', 'Info', 'Details', 'Review']
+const STEPS = ['Account', 'Personal', 'CNIC', 'Services', 'Review'];
 
 export default function Register() {
-  const navigate = useNavigate()
-  const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
-  const [step, setStep] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isHovered, setIsHovered] = useState(false)
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const navigate = useNavigate();
+  const { language, setUser, setRole } = useAuthStore();
+  const providerStore = useProviderStore();
+  const customerStore = useCustomerStore();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [role, setRole] = useState('')
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [city, setCity] = useState('Jand')
-  const [address, setAddress] = useState('')
-  const [serviceTypes, setServiceTypes] = useState([])
-  const [yearsExperience, setYearsExperience] = useState('')
-  const [cnic, setCnic] = useState('')
+  // Form data - ALL fields required
+  const [formData, setFormData] = useState({
+    // Step 1: Account
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'customer', // customer or provider
+    
+    // Step 2: Personal (required for ALL roles)
+    fullName: '',
+    phone: '',
+    city: '',
+    address: '',
+    
+    // Step 3: CNIC (required for ALL roles)
+    cnicNumber: '',
+    cnicFrontFile: null,
+    cnicBackFile: null,
+    cnicFrontPreview: null,
+    cnicBackPreview: null,
+    
+    // Step 4: Services (providers only, max 1)
+    selectedService: '',
+    
+    // Step 5: Certifications (providers only, optional)
+    certificationFile: null,
+    certificationPreview: null,
+    experience: '',
+    bio: '',
+  });
 
-  const t = {
-    en: {
-      createAccount: 'Create Account',
-      step: 'Step',
-      of: 'of',
-      chooseType: 'Choose your account type',
-      customer: 'Customer',
-      customerDesc: 'Request services',
-      provider: 'Service Provider',
-      providerDesc: 'Offer your services',
-      fullName: 'Full Name',
-      namePlaceholder: 'Ahmed Khan',
-      email: 'Email',
-      emailPlaceholder: 'you@example.com',
-      phone: 'Phone',
-      phonePlaceholder: '03XX-XXXXXXX',
-      password: 'Password',
-      confirmPassword: 'Confirm Password',
-      mismatch: 'Passwords do not match',
-      city: 'City',
-      address: 'Address',
-      addressPlaceholder: 'House #, Street, Area',
-      serviceTypes: 'Service Types',
-      experience: 'Years of Experience',
-      cnic: 'CNIC Number',
-      cnicPlaceholder: 'XXXXX-XXXXXXX-X',
-      cnicFront: 'CNIC Front',
-      cnicBack: 'CNIC Back',
-      review: 'Review your information',
-      roleLabel: 'Role',
-      nameLabel: 'Name',
-      emailLabel: 'Email',
-      phoneLabel: 'Phone',
-      servicesLabel: 'Services',
-      selected: 'selected',
-      experienceLabel: 'Experience',
-      years: 'years',
-      back: 'Back',
-      next: 'Next',
-      submit: 'Submit',
-      creating: 'Creating...',
-      hasAccount: 'Already have an account?',
-      signIn: 'Sign In',
-      plumber: 'Plumber',
-      electrician: 'Electrician',
-      grocery: 'Grocery',
-      computerRepair: 'Computer Repair',
-    },
-    ur: {
-      createAccount: 'اکاؤنٹ بنائیں',
-      step: 'مرحلہ',
-      of: 'کا',
-      chooseType: 'اپنے اکاؤنٹ کی قسم منتخب کریں',
-      customer: 'کسٹمر',
-      customerDesc: 'خدمات کی درخواست کریں',
-      provider: 'سروس پرووائیڈر',
-      providerDesc: 'اپنی خدمات پیش کریں',
-      fullName: 'پورا نام',
-      namePlaceholder: 'احمد خان',
-      email: 'ای میل',
-      emailPlaceholder: 'آپ@مثال.کوم',
-      phone: 'فون',
-      phonePlaceholder: '03XX-XXXXXXX',
-      password: 'پاس ورڈ',
-      confirmPassword: 'پاس ورڈ کی تصدیق',
-      mismatch: 'پاس ورڈز مماثل نہیں ہیں',
-      city: 'شہر',
-      address: 'پتہ',
-      addressPlaceholder: 'گھر نمبر، گلی، علاقہ',
-      serviceTypes: 'خدمات کی اقسام',
-      experience: 'تجربہ (سال)',
-      cnic: 'شناختی کارڈ نمبر',
-      cnicPlaceholder: 'XXXXX-XXXXXXX-X',
-      cnicFront: 'کارڈ سامنے',
-      cnicBack: 'کارڈ پیچھے',
-      review: 'اپنی معلومات کا جائزہ لیں',
-      roleLabel: 'کردار',
-      nameLabel: 'نام',
-      emailLabel: 'ای میل',
-      phoneLabel: 'فون',
-      servicesLabel: 'خدمات',
-      selected: 'منتخب',
-      experienceLabel: 'تجربہ',
-      years: 'سال',
-      back: 'واپس',
-      next: 'اگلا',
-      submit: 'جمع کرائیں',
-      creating: 'بنا رہا ہے...',
-      hasAccount: 'پہلے سے اکاؤنٹ ہے؟',
-      signIn: 'سائن ان کریں',
-      plumber: 'پلمبر',
-      electrician: 'الیکٹریشن',
-      grocery: 'گروسری',
-      computerRepair: 'کمپیوٹر مرمت',
-    },
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+
+  // Validate current step before proceeding
+  function validateStep(step) {
+    const newErrors = {};
+    
+    if (step === 0) {
+      if (!formData.email.trim()) newErrors.email = language === 'ur' ? 'ای میل درکار ہے' : 'Email is required';
+      else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = language === 'ur' ? 'درست ای میل درج کریں' : 'Invalid email format';
+      if (!formData.password) newErrors.password = language === 'ur' ? 'پاسورڈ درکار ہے' : 'Password is required';
+      else if (formData.password.length < 8) newErrors.password = language === 'ur' ? 'پاسورڈ کم از کم 8 حروف کا ہو' : 'Password must be at least 8 characters';
+      if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = language === 'ur' ? 'پاسورڈ مماثل نہیں' : 'Passwords do not match';
+    }
+    
+    if (step === 1) {
+      if (!formData.fullName.trim()) newErrors.fullName = language === 'ur' ? 'نام درکار ہے' : 'Full name is required';
+      if (!formData.phone.trim()) newErrors.phone = language === 'ur' ? 'فون نمبر درکار ہے' : 'Phone number is required';
+      if (!formData.city.trim()) newErrors.city = language === 'ur' ? 'شہر درکار ہے' : 'City is required';
+      if (!formData.address.trim()) newErrors.address = language === 'ur' ? 'پتہ درکار ہے' : 'Address is required';
+    }
+    
+    if (step === 2) {
+      if (!formData.cnicNumber.trim()) newErrors.cnicNumber = language === 'ur' ? 'شناختی کارڈ نمبر درکار ہے' : 'CNIC number is required';
+      else if (!/^\d{5}-\d{7}-\d{1}$/.test(formData.cnicNumber)) newErrors.cnicNumber = language === 'ur' ? 'درست CNIC فارمیٹ: 00000-0000000-0' : 'Valid CNIC format: 00000-0000000-0';
+      if (!formData.cnicFrontFile) newErrors.cnicFront = language === 'ur' ? 'شناختی کارڈ کی سامنے کی تصویر درکار ہے' : 'CNIC front image is required';
+      if (!formData.cnicBackFile) newErrors.cnicBack = language === 'ur' ? 'شناختی کارڈ کی پچھلی تصویر درکار ہے' : 'CNIC back image is required';
+    }
+    
+    if (step === 3 && formData.role === 'provider') {
+      if (!formData.selectedService) newErrors.selectedService = language === 'ur' ? 'کم از کم ایک سروس منتخب کریں' : 'Please select one service';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   }
 
-  const text = t[lang]
-
-  const toggleLanguage = (l) => {
-    setLang(l)
-    localStorage.setItem('zaria-language', l)
-  }
-
-  const handleMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    setMousePosition({ x: e.clientX - rect.left, y: e.clientY - rect.top })
-  }
-
-  const toggleServiceType = (type) => {
-    setServiceTypes((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]))
-  }
-
-  const canProceed = () => {
-    if (step === 1) return role !== ''
-    if (step === 2) return fullName && email && phone && password && confirmPassword && password === confirmPassword
-    if (step === 3 && role === 'provider') return serviceTypes.length > 0
-    return true
-  }
-
-  const handleSubmit = async () => {
-    setError('')
-    setLoading(true)
-    try {
-      await signUp(email, password, fullName, role)
-      navigate('/waiting-approval')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+  function nextStep() {
+    if (validateStep(currentStep)) {
+      // Skip service step for customers
+      if (currentStep === 2 && formData.role === 'customer') {
+        setCurrentStep(4); // Go to review
+      } else if (currentStep === 3 && formData.role === 'provider') {
+        setCurrentStep(4); // Go to review
+      } else {
+        setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1));
+      }
     }
   }
 
-  const services = [
-    { id: 'plumber', en: 'Plumber', ur: 'پلمبر', icon: '🔧' },
-    { id: 'electrician', en: 'Electrician', ur: 'الیکٹریشن', icon: '⚡' },
-    { id: 'grocery', en: 'Grocery', ur: 'گروسری', icon: '🛒' },
-    { id: 'computer_repair', en: 'Computer Repair', ur: 'کمپیوٹر مرمت', icon: '💻' },
-  ]
+  function prevStep() {
+    // Skip service step for customers when going back
+    if (currentStep === 4 && formData.role === 'customer') {
+      setCurrentStep(2);
+    } else {
+      setCurrentStep(prev => Math.max(prev - 1, 0));
+    }
+  }
+
+  // Handle file upload via camera or gallery
+  function handleFileSelect(type, event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert(language === 'ur' ? 'براہ کرم تصویر منتخب کریں' : 'Please select an image file');
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert(language === 'ur' ? 'تصویر کا سائز 5MB سے کم ہو' : 'Image size must be less than 5MB');
+      return;
+    }
+    
+    const preview = URL.createObjectURL(file);
+    
+    setFormData(prev => ({
+      ...prev,
+      [`${type}File`]: file,
+      [`${type}Preview`]: preview,
+    }));
+    
+    // Clear error for this field
+    setErrors(prev => ({ ...prev, [type]: undefined }));
+  }
+
+ function openCamera(type) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.capture = 'environment';
+  input.onchange = (e) => handleFileSelect(type, e);
+  input.click();
+}
+
+  // Format CNIC as user types
+  function formatCNIC(value) {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 5) return digits;
+    if (digits.length <= 12) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12, 13)}`;
+  }
+
+// Submit registration
+async function handleSubmit() {
+  if (!validateStep(4)) return;
+  setLoading(true);
+  
+  try {
+    // 1. Sign up with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: {
+        data: {
+          full_name: formData.fullName,
+          role: formData.role,
+        }
+      }
+    });
+    
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('Registration failed');
+
+    // 2. Insert into users table
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: formData.email,
+        password_hash: 'managed-by-supabase-auth',
+        full_name: formData.fullName,
+        phone: formData.phone,
+        role: formData.role,
+        city: formData.city || 'Jand',
+        is_active: true,
+        email_verified: false,
+      });
+
+    if (userError) throw userError;
+
+    // 3. If provider, insert into providers table
+    if (formData.role === 'provider') {
+      const { error: providerError } = await supabase
+        .from('providers')
+        .insert({
+          user_id: authData.user.id,
+          service_types: formData.selectedService ? [formData.selectedService] : [],
+          phone: formData.phone,
+          is_approved: false,
+          is_online: false,
+          tier: 'bronze',
+        });
+
+      if (providerError) throw providerError;
+    }
+
+    // 4. Navigate based on role
+    if (formData.role === 'provider') {
+      navigate('/provider/waiting-approval');
+    } else {
+      navigate('/customer/dashboard');
+    }
+    
+  } catch (err) {
+    alert(err.message || 'Registration failed');
+  } finally {
+    setLoading(false);
+  }
+}
+
+  const t = (en, ur) => language === 'ur' ? ur : en;
+
+  // Available services for providers
+  const SERVICES = [
+    { id: 'plumbing', name: t('Plumbing', 'پلمبنگ'), icon: '🔧' },
+    { id: 'electrical', name: t('Electrical', 'الیکٹریکل'), icon: '⚡' },
+    { id: 'cleaning', name: t('Cleaning', 'صفائی'), icon: '🧹' },
+    { id: 'painting', name: t('Painting', 'پینٹنگ'), icon: '🎨' },
+    { id: 'carpentry', name: t('Carpentry', 'کارپینٹری'), icon: '🪚' },
+    { id: 'ac_repair', name: t('AC Repair', 'اے سی مرمت'), icon: '❄️' },
+    { id: 'mechanic', name: t('Mechanic', 'مکینک'), icon: '🔩' },
+    { id: 'gardening', name: t('Gardening', 'باغبانی'), icon: '🌱' },
+  ];
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-white" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
-      <div className="absolute inset-0 bg-gradient-to-br from-white via-purple-50/30 to-white" />
-
-      {/* Floating particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              background: `rgba(139, 92, 246, ${Math.random() * 0.08 + 0.02})`,
-              animation: `float-${i % 3} ${Math.random() * 8 + 8}s linear infinite`,
-              animationDelay: `${Math.random() * 4}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative w-full max-w-[420px]" onMouseMove={handleMouseMove} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-        {/* Glow */}
-        <div
-          className="absolute -inset-1 rounded-2xl transition-all duration-500"
-          style={{
-            background: `radial-gradient(circle ${isHovered ? '350px' : '0px'} at ${mousePosition.x}px ${mousePosition.y}px, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.08) 60%, transparent 100%)`,
-            opacity: isHovered ? 1 : 0,
-            transform: isHovered ? 'scale(1.02)' : 'scale(1)',
-            filter: 'blur(25px)',
-            zIndex: -1,
-            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        />
-
-        {/* Card */}
-        <div
-          className="relative bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] p-8 border border-purple-100/20 transition-all duration-300"
-          style={{
-            transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
-            boxShadow: isHovered ? '0 20px 60px rgba(139, 92, 246, 0.12), 0 8px 30px rgba(0,0,0,0.06)' : '0 8px 30px rgba(0,0,0,0.06)',
-          }}
-        >
-          {/* Language Toggle */}
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-purple-50/50 rounded-xl p-1">
-            <button onClick={() => toggleLanguage('en')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${lang === 'en' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25' : 'text-purple-600 hover:bg-purple-100'}`}>EN</button>
-            <button onClick={() => toggleLanguage('ur')} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${lang === 'ur' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25' : 'text-purple-600 hover:bg-purple-100'}`}>اردو</button>
-          </div>
-
-          {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-purple-50 mb-4">
-              <UserPlus className="w-7 h-7 text-purple-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">{text.createAccount}</h1>
-            <p className="text-sm text-gray-500 mt-1.5">
-              {step === 1 ? text.chooseType : `${text.step} ${step} ${text.of} 4`}
-            </p>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-1 mb-6">
-            {STEPS.map((_, i) => (
-              <div key={i} className="flex items-center gap-1">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${i + 1 <= step ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                  {i + 1 < step ? <Check className="w-3 h-3" /> : i + 1}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm p-4">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Zaria</h1>
+          <div className="flex items-center gap-2">
+            {STEPS.map((step, i) => (
+              <div key={i} className="flex items-center">
+                {i > 0 && <div className={`w-4 h-0.5 ${i <= currentStep ? 'bg-blue-600' : 'bg-gray-300'}`} />}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                  i < currentStep ? 'bg-blue-600 text-white' :
+                  i === currentStep ? 'bg-blue-100 text-blue-600 border-2 border-blue-600' :
+                  'bg-gray-200 text-gray-500'
+                }`}>
+                  {i < currentStep ? <Check size={14} /> : i + 1}
                 </div>
-                {i < STEPS.length - 1 && <div className={`w-6 h-0.5 rounded ${i + 1 < step ? 'bg-purple-600' : 'bg-gray-200'}`} />}
               </div>
             ))}
           </div>
-
-          {/* Error */}
-          {error && (
-            <div className="bg-red-50 text-red-600 text-xs rounded-xl px-4 py-2.5 mb-4 border border-red-200 text-center">{error}</div>
-          )}
-
-          {/* STEP 1 */}
-          {step === 1 && (
-            <div className="space-y-3">
-              <button onClick={() => setRole('customer')} className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${role === 'customer' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 bg-gray-50 hover:border-purple-300'}`}>
-                <div className="flex items-center gap-3">
-                  <User className={`w-5 h-5 ${role === 'customer' ? 'text-purple-600' : 'text-gray-400'}`} />
-                  <div><p className="text-sm font-semibold text-gray-900">{text.customer}</p><p className="text-xs text-gray-500">{text.customerDesc}</p></div>
-                </div>
-              </button>
-              <button onClick={() => setRole('provider')} className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-200 ${role === 'provider' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 bg-gray-50 hover:border-purple-300'}`}>
-                <div className="flex items-center gap-3">
-                  <Briefcase className={`w-5 h-5 ${role === 'provider' ? 'text-purple-600' : 'text-gray-400'}`} />
-                  <div><p className="text-sm font-semibold text-gray-900">{text.provider}</p><p className="text-xs text-gray-500">{text.providerDesc}</p></div>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {/* STEP 2 */}
-          {step === 2 && (
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.fullName}</label>
-                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={text.namePlaceholder} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.email}</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={text.emailPlaceholder} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.phone}</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={text.phonePlaceholder} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.password}</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.confirmPassword}</label>
-                <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" className={`w-full px-4 py-2.5 bg-gray-50 border rounded-xl text-sm placeholder-gray-400 transition-all ${confirmPassword && password !== confirmPassword ? 'border-red-300 focus:ring-red-500/50' : 'border-gray-200 focus:ring-purple-500/50 focus:border-transparent'}`} />
-                {confirmPassword && password !== confirmPassword && <p className="text-xs text-red-500 mt-1">{text.mismatch}</p>}
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3 — Customer */}
-          {step === 3 && role === 'customer' && (
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.city}</label>
-                <input type="text" value={city} onChange={(e) => setCity(e.target.value)} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.address}</label>
-                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder={text.addressPlaceholder} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3 — Provider */}
-          {step === 3 && role === 'provider' && (
-            <div className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-2">{text.serviceTypes}</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {services.map((svc) => (
-                    <button key={svc.id} type="button" onClick={() => toggleServiceType(svc.id)} className={`p-3 rounded-xl border text-center transition-all duration-200 ${serviceTypes.includes(svc.id) ? 'border-purple-600 bg-purple-50' : 'border-gray-200 bg-gray-50 hover:border-purple-300'}`}>
-                      <span className="text-lg block">{svc.icon}</span>
-                      <span className="text-xs font-medium text-gray-700 mt-1 block">{lang === 'ur' ? svc.ur : svc.en}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.experience}</label>
-                <input type="number" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} placeholder="5" className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">{text.cnic}</label>
-                <input type="text" value={cnic} onChange={(e) => setCnic(e.target.value)} placeholder={text.cnicPlaceholder} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500/50 focus:border-transparent text-sm placeholder-gray-400" />
-              </div>
-              <div className="flex gap-2">
-                <button type="button" className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-300 rounded-xl px-3 py-4 text-xs text-gray-500 hover:border-purple-400 hover:text-purple-600 transition-colors bg-gray-50">
-                  <Camera className="w-4 h-4" /> {text.cnicFront}
-                </button>
-                <button type="button" className="flex-1 flex items-center justify-center gap-1.5 border border-dashed border-gray-300 rounded-xl px-3 py-4 text-xs text-gray-500 hover:border-purple-400 hover:text-purple-600 transition-colors bg-gray-50">
-                  <FileText className="w-4 h-4" /> {text.cnicBack}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4 */}
-          {step === 4 && (
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500 text-center">{text.review}</p>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-2.5 text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">{text.roleLabel}</span><span className="font-medium text-gray-700">{role === 'customer' ? text.customer : text.provider}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{text.nameLabel}</span><span className="font-medium text-gray-700">{fullName}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{text.emailLabel}</span><span className="font-medium text-gray-700">{email}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">{text.phoneLabel}</span><span className="font-medium text-gray-700">{phone}</span></div>
-                {role === 'provider' && (
-                  <>
-                    <div className="flex justify-between"><span className="text-gray-500">{text.servicesLabel}</span><span className="font-medium text-gray-700">{serviceTypes.length} {text.selected}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">{text.experienceLabel}</span><span className="font-medium text-gray-700">{yearsExperience} {text.years}</span></div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons — minimal width, centered */}
-          <div className="flex justify-center gap-3 mt-6">
-            {step > 1 && (
-              <button type="button" onClick={() => setStep(step - 1)} className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-medium transition-all duration-200 border-2 border-gray-200 bg-white text-gray-600 hover:border-purple-200 hover:text-purple-600 text-sm">
-                <ArrowLeft className="w-4 h-4" /> {text.back}
-              </button>
-            )}
-            {step < 4 ? (
-              <button type="button" onClick={() => setStep(step + 1)} disabled={!canProceed()} className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl font-medium transition-all duration-300 border-2 border-purple-200 bg-white text-purple-600 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
-                {text.next} <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <button type="button" onClick={handleSubmit} disabled={loading} className="inline-flex items-center gap-1.5 px-8 py-2.5 rounded-xl font-medium transition-all duration-300 border-2 border-purple-200 bg-white text-purple-600 hover:bg-purple-600 hover:text-white hover:border-purple-600 shadow-sm hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 disabled:cursor-not-allowed text-sm">
-                {loading ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
-                {loading ? text.creating : text.submit}
-              </button>
-            )}
-          </div>
-
-          {/* Sign In Link */}
-          <p className="text-center text-sm text-gray-600 mt-4">
-            {text.hasAccount}{' '}
-            <Link to="/login" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">{text.signIn}</Link>
-          </p>
         </div>
       </div>
 
-      <style>{`
-        @keyframes float-0 { 0%,100% { transform:translateY(0)translateX(0) } 25% { transform:translateY(-20px)translateX(10px) } 50% { transform:translateY(0)translateX(-10px) } 75% { transform:translateY(-10px)translateX(15px) } }
-        @keyframes float-1 { 0%,100% { transform:translateY(0)translateX(0) } 33% { transform:translateY(-15px)translateX(-15px) } 66% { transform:translateY(10px)translateX(10px) } }
-        @keyframes float-2 { 0%,100% { transform:translateY(0)translateX(0) } 50% { transform:translateY(-25px)translateX(-5px) } }
-      `}</style>
+      {/* Form Content */}
+      <div className="flex-1 max-w-2xl mx-auto w-full p-6">
+        
+        {/* STEP 0: Account */}
+        {currentStep === 0 && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('Create Account', 'اکاؤنٹ بنائیں')}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              {t('Choose your role and set up your login details', 'اپنا کردار منتخب کریں اور لاگ ان کی تفصیلات سیٹ کریں')}
+            </p>
+            
+            {/* Role Selection */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, role: 'customer' }))}
+                className={`p-4 rounded-xl border-2 text-center transition-all ${
+                  formData.role === 'customer'
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-3xl mb-2">🏠</div>
+                <div className="font-semibold text-gray-900 dark:text-white">
+                  {t('Customer', 'گاہک')}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {t('I need services', 'مجھے خدمات چاہیے')}
+                </div>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, role: 'provider' }))}
+                className={`p-4 rounded-xl border-2 text-center transition-all ${
+                  formData.role === 'provider'
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="text-3xl mb-2">🔨</div>
+                <div className="font-semibold text-gray-900 dark:text-white">
+                  {t('Service Provider', 'سروس پرووائیڈر')}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {t('I provide services', 'میں خدمات فراہم کرتا ہوں')}
+                </div>
+              </button>
+            </div>
+            
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Email', 'ای میل')} *
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, email: e.target.value }));
+                  setErrors(prev => ({ ...prev, email: undefined }));
+                }}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+                placeholder="name@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Password', 'پاسورڈ')} *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, password: e.target.value }));
+                    setErrors(prev => ({ ...prev, password: undefined }));
+                  }}
+                  className={`w-full px-4 py-3 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
+            
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Confirm Password', 'پاسورڈ کی تصدیق')} *
+              </label>
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                  setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                }}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+                placeholder="••••••••"
+              />
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 1: Personal Info */}
+        {currentStep === 1 && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('Personal Information', 'ذاتی معلومات')}
+            </h2>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Full Name', 'پورا نام')} *
+              </label>
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, fullName: e.target.value }));
+                  setErrors(prev => ({ ...prev, fullName: undefined }));
+                }}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.fullName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Phone Number', 'فون نمبر')} *
+              </label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, phone: e.target.value }));
+                  setErrors(prev => ({ ...prev, phone: undefined }));
+                }}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.phone ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+                placeholder="+92 300 1234567"
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('City', 'شہر')} *
+              </label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, city: e.target.value }));
+                  setErrors(prev => ({ ...prev, city: undefined }));
+                }}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.city ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Address', 'پتہ')} *
+              </label>
+              <textarea
+                value={formData.address}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, address: e.target.value }));
+                  setErrors(prev => ({ ...prev, address: undefined }));
+                }}
+                rows={3}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.address ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+              />
+              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: CNIC (Required for ALL users) */}
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('CNIC Verification', 'شناختی کارڈ کی تصدیق')}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              {t('Your CNIC is required for identity verification', 'شناخت کی تصدیق کے لیے آپ کا شناختی کارڈ درکار ہے')}
+            </p>
+            
+            {/* CNIC Number */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('CNIC Number', 'شناختی کارڈ نمبر')} *
+              </label>
+              <input
+                type="text"
+                value={formData.cnicNumber}
+                onChange={(e) => {
+                  const formatted = formatCNIC(e.target.value);
+                  setFormData(prev => ({ ...prev, cnicNumber: formatted }));
+                  setErrors(prev => ({ ...prev, cnicNumber: undefined }));
+                }}
+                maxLength={15}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.cnicNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500`}
+                placeholder="00000-0000000-0"
+              />
+              {errors.cnicNumber && <p className="text-red-500 text-sm mt-1">{errors.cnicNumber}</p>}
+            </div>
+            
+            {/* CNIC Front */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('CNIC Front Side', 'شناختی کارڈ سامنے کی طرف')} *
+              </label>
+              {formData.cnicFrontPreview ? (
+                <div className="relative">
+                  <img src={formData.cnicFrontPreview} alt="CNIC Front" className="w-full max-w-md rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, cnicFrontFile: null, cnicFrontPreview: null }))}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => openCamera('cnicFront')}
+                    className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 transition-colors"
+                  >
+                    <Camera size={32} className="text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('Take Photo', 'تصویر لیں')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('cnicFrontInput').click()}
+                    className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 transition-colors"
+                  >
+                    <Upload size={32} className="text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('Upload', 'اپ لوڈ کریں')}
+                    </span>
+                  </button>
+                  <input
+                    id="cnicFrontInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect('cnicFront', e)}
+                  />
+                </div>
+              )}
+              {errors.cnicFront && <p className="text-red-500 text-sm mt-1">{errors.cnicFront}</p>}
+            </div>
+            
+            {/* CNIC Back */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('CNIC Back Side', 'شناختی کارڈ پچھلی طرف')} *
+              </label>
+              {formData.cnicBackPreview ? (
+                <div className="relative">
+                  <img src={formData.cnicBackPreview} alt="CNIC Back" className="w-full max-w-md rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, cnicBackFile: null, cnicBackPreview: null }))}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => openCamera('cnicBack')}
+                    className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 transition-colors"
+                  >
+                    <Camera size={32} className="text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('Take Photo', 'تصویر لیں')}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('cnicBackInput').click()}
+                    className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 transition-colors"
+                  >
+                    <Upload size={32} className="text-gray-400" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      {t('Upload', 'اپ لوڈ کریں')}
+                    </span>
+                  </button>
+                  <input
+                    id="cnicBackInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFileSelect('cnicBack', e)}
+                  />
+                </div>
+              )}
+              {errors.cnicBack && <p className="text-red-500 text-sm mt-1">{errors.cnicBack}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Services (Providers Only) */}
+        {currentStep === 3 && formData.role === 'provider' && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('Select Your Service', 'اپنی سروس منتخب کریں')}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              {t('You can only select ONE primary service for smooth app performance', 'ایپ کی بہتر کارکردگی کے لیے آپ صرف ایک سروس منتخب کر سکتے ہیں')}
+            </p>
+            <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">
+              ⚠️ {t('Limit: 1 service per provider account', 'حد: فی پرووائیڈر اکاؤنٹ صرف 1 سروس')}
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {SERVICES.map(service => (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, selectedService: service.id }));
+                    setErrors(prev => ({ ...prev, selectedService: undefined }));
+                  }}
+                  className={`p-4 rounded-xl border-2 text-center transition-all ${
+                    formData.selectedService === service.id
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{service.icon}</div>
+                  <div className="font-medium text-gray-900 dark:text-white text-sm">{service.name}</div>
+                </button>
+              ))}
+            </div>
+            {errors.selectedService && <p className="text-red-500 text-sm">{errors.selectedService}</p>}
+            
+            {/* Experience & Bio */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Years of Experience', 'تجربے کے سال')}
+              </label>
+              <input
+                type="number"
+                value={formData.experience}
+                onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+                min="0"
+                max="50"
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('Short Bio', 'مختصر تعارف')}
+              </label>
+              <textarea
+                value={formData.bio}
+                onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                rows={3}
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                placeholder={t('Tell customers about yourself...', 'گاہکوں کو اپنے بارے میں بتائیں...')}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Review */}
+        {currentStep === 4 && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {t('Review Your Information', 'اپنی معلومات کا جائزہ لیں')}
+            </h2>
+            
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-3">
+              <ReviewRow label={t('Role', 'کردار')} value={formData.role === 'customer' ? t('Customer', 'گاہک') : t('Service Provider', 'سروس پرووائیڈر')} />
+              <ReviewRow label={t('Email', 'ای میل')} value={formData.email} />
+              <ReviewRow label={t('Full Name', 'پورا نام')} value={formData.fullName} />
+              <ReviewRow label={t('Phone', 'فون')} value={formData.phone} />
+              <ReviewRow label={t('City', 'شہر')} value={formData.city} />
+              <ReviewRow label={t('CNIC', 'شناختی کارڈ')} value={formData.cnicNumber} />
+              {formData.cnicFrontPreview && (
+                <div>
+                  <span className="text-sm text-gray-500">{t('CNIC Front', 'شناختی کارڈ سامنے')}:</span>
+                  <img src={formData.cnicFrontPreview} alt="CNIC Front" className="w-32 rounded mt-1" />
+                </div>
+              )}
+              {formData.cnicBackPreview && (
+                <div>
+                  <span className="text-sm text-gray-500">{t('CNIC Back', 'شناختی کارڈ پیچھے')}:</span>
+                  <img src={formData.cnicBackPreview} alt="CNIC Back" className="w-32 rounded mt-1" />
+                </div>
+              )}
+              {formData.role === 'provider' && (
+                <>
+                  <ReviewRow label={t('Service', 'سروس')} value={SERVICES.find(s => s.id === formData.selectedService)?.name || '-'} />
+                  <ReviewRow label={t('Experience', 'تجربہ')} value={formData.experience ? `${formData.experience} years` : '-'} />
+                </>
+              )}
+            </div>
+            
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                  {t('Creating Account...', 'اکاؤنٹ بن رہا ہے...')}
+                </span>
+              ) : (
+                t('Create Account', 'اکاؤنٹ بنائیں')
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-8">
+          {currentStep > 0 && (
+            <button
+              type="button"
+              onClick={prevStep}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <ArrowLeft size={20} />
+              {t('Back', 'واپس')}
+            </button>
+          )}
+          <div className="flex-1" />
+{currentStep < 4 && (            <button
+              type="button"
+              onClick={nextStep}
+              className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              {t('Next', 'اگلا')}
+              <ArrowRight size={20} />
+            </button>
+          )}
+        </div>
+        
+        {/* Sign In Link */}
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-8">
+          {t('Already have an account?', 'پہلے سے اکاؤنٹ ہے؟')}{' '}
+          <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            {t('Sign In', 'سائن ان کریں')}
+          </Link>
+        </p>
+      </div>
     </div>
-  )
+  );
+}
+
+function ReviewRow({ label, value }) {
+  return (
+    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm font-medium text-gray-900 dark:text-white">{value || '-'}</span>
+    </div>
+  );
 }

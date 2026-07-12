@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, X, User } from 'lucide-react'
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from '@/lib/supabaseClient'
 
 export default function AdminApprovals() {
+  const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [providers, setProviders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -13,7 +14,10 @@ export default function AdminApprovals() {
   useEffect(() => {
     async function load() {
       try {
-        const { data } = await supabase.from('providers').select('*, users!inner(email, full_name)').eq('is_approved', false)
+        const { data } = await supabase
+          .from('providers')
+          .select('*, user:user_id(email, full_name)')
+          .eq('is_approved', false)
         setProviders(data || [])
       } catch (err) { console.error(err) }
       finally { setLoading(false) }
@@ -34,7 +38,7 @@ export default function AdminApprovals() {
   return (
     <div className="min-h-screen bg-gray-50" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <header className="bg-white border-b border-gray-200 px-4 h-16 flex items-center gap-3 sticky top-0 z-30">
-        <Link to="/admin-dashboard" className="text-gray-500"><ArrowLeft className="w-5 h-5" /></Link>
+        <button onClick={() => navigate(-1)} className="text-gray-500"><ArrowLeft className="w-5 h-5" /></button>
         <h1 className="text-lg font-semibold text-gray-900">{t('Pending Approvals', 'زیر التواء منظوریاں')}</h1>
       </header>
       <div className="max-w-3xl mx-auto p-4">
@@ -44,8 +48,8 @@ export default function AdminApprovals() {
           <div key={p.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="font-semibold text-gray-900">{p.users?.full_name || 'Provider'}</p>
-                <p className="text-xs text-gray-500">{p.users?.email}</p>
+                <p className="font-semibold text-gray-900">{p.user?.full_name || 'Provider'}</p>
+                <p className="text-xs text-gray-500">{p.user?.email}</p>
                 <p className="text-xs text-gray-400 mt-1">{p.service_types?.join(', ')}</p>
               </div>
             </div>

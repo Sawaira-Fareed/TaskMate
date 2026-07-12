@@ -15,6 +15,7 @@ export default function ProviderRequestDetail() {
   const [showCounter, setShowCounter] = useState(false)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
+  
 
   useEffect(() => {
     async function load() {
@@ -34,7 +35,7 @@ export default function ProviderRequestDetail() {
     await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'accepted' })
     await supabase.from('bookings').insert({ request_id: id, customer_id: request.customer_id, provider_id: provider.id, service_type: request.service_type, scheduled_date: request.preferred_date, scheduled_time: request.preferred_time, status: 'confirmed' })
     await supabase.from('requests').update({ status: 'confirmed' }).eq('id', id)
-    navigate('/provider-dashboard')
+    navigate('/provider/dashboard')
   }
 
   const handleDecline = async () => {
@@ -42,7 +43,7 @@ export default function ProviderRequestDetail() {
     const user = await getCurrentUser()
     const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
     await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'declined' })
-    navigate('/provider-dashboard')
+    navigate('/provider/dashboard')
   }
 
   const handleCounter = async () => {
@@ -50,7 +51,7 @@ export default function ProviderRequestDetail() {
     const user = await getCurrentUser()
     const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
     await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'counter_offer', proposed_time: counterPrice })
-    navigate('/provider-dashboard')
+    navigate('/provider/dashboard')
   }
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
@@ -59,7 +60,7 @@ export default function ProviderRequestDetail() {
   return (
     <div className="min-h-screen bg-gray-50" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <header className="bg-white border-b border-gray-200 px-4 h-16 flex items-center gap-3 sticky top-0 z-30">
-        <Link to="/provider-dashboard" className="text-gray-500"><ArrowLeft className="w-5 h-5" /></Link>
+        <button onClick={() => navigate(-1)} className="text-gray-500"><ArrowLeft className="w-5 h-5" /></button>
         <h1 className="text-lg font-semibold text-gray-900">{t('Request Detail', 'درخواست کی تفصیل')}</h1>
       </header>
       <div className="max-w-2xl mx-auto p-4 space-y-4">

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Clock, CheckCircle, XCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Settings } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
-import { supabase } from "../../lib/supabaseClient";
+import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
+
 export default function ProviderDashboard() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [user, setUser] = useState(null)
   const [incomingRequests, setIncomingRequests] = useState([])
@@ -41,10 +43,10 @@ export default function ProviderDashboard() {
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
   const sidebarLinks = [
-    { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), active: true, path: '/provider-dashboard' },
-    { icon: ClipboardList, label: t('My Jobs', 'میرے کام'), path: '/provider-jobs' },
-    { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/provider-notifications' },
-    { icon: User, label: t('Profile', 'پروفائل'), path: '/provider-profile' },
+    { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), path: '/provider/dashboard' },
+    { icon: ClipboardList, label: t('My Jobs', 'میرے کام'), path: '/provider/jobs' },
+    { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/provider/notifications' },
+    { icon: User, label: t('Profile', 'پروفائل'), path: '/provider/profile' },
   ]
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
@@ -57,11 +59,23 @@ export default function ProviderDashboard() {
           {sidebarOpen && <span className="text-lg font-bold text-gray-900">Zaria</span>}
         </div>
         <nav className="p-3 space-y-1">
-          {sidebarLinks.map((link, i) => (
-            <Link key={i} to={link.path} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${link.active ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}>
-              <link.icon className="w-5 h-5 flex-shrink-0" />{sidebarOpen && <span>{link.label}</span>}
-            </Link>
-          ))}
+          {sidebarLinks.map((link, i) => {
+            const isActive = location.pathname === link.path
+            return (
+              <button
+                key={i}
+                onClick={() => {
+                  if (location.pathname !== link.path) {
+                    navigate(link.path)
+                  }
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${isActive ? 'bg-purple-50 text-purple-600' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <link.icon className="w-5 h-5 flex-shrink-0" />
+                {sidebarOpen && <span>{link.label}</span>}
+              </button>
+            )
+          })}
         </nav>
         <div className="absolute bottom-4 left-0 right-0 px-3">
           <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all "><LogOut className="w-5 h-5 flex-shrink-0" />{sidebarOpen && <span>{t('Sign Out', 'سائن آؤٹ')}</span>}</button>
@@ -98,10 +112,14 @@ export default function ProviderDashboard() {
             <h3 className="font-semibold text-gray-900 mb-4">{t('Incoming Requests', 'آنے والی درخواستیں')}</h3>
             {incomingRequests.length === 0 ? <div className="text-center py-8"><Clock className="w-10 h-10 text-gray-300 mx-auto mb-2" /><p className="text-sm text-gray-500">{t('No new requests', 'کوئی نئی درخواست نہیں')}</p></div>
             : <div className="space-y-2">{incomingRequests.map(req => (
-              <Link key={req.id} to={`/provider-request/${req.id}`} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors">
+              <button
+                key={req.id}
+                onClick={() => navigate(`/provider/request/${req.id}`)}
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors text-left"
+              >
                 <div><p className="text-sm font-medium text-gray-900">{req.service_type}</p><p className="text-xs text-gray-500">{req.preferred_date} • {req.preferred_time}</p></div>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
-              </Link>
+              </button>
             ))}</div>}
           </div>
         </main>

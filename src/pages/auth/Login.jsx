@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { signIn } from '@/lib/auth'
-
+import { supabase } from '@/lib/supabaseClient'
 export default function Login() {
   const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
@@ -58,20 +58,33 @@ export default function Login() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      await signIn(email, password)
-      navigate('/customer-home')
-    } catch (err) {
-      if (err.message.includes('Invalid login credentials')) setError(text.wrongPassword)
-      else if (err.message.includes('Email not confirmed')) setError(text.verifyEmail)
-      else setError(err.message)
-    } finally {
-      setLoading(false)
+  e.preventDefault()
+  setError('')
+  setLoading(true)
+  try {
+    await signIn(email, password)
+    
+    // Fetch user role from database to redirect correctly
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile?.role === 'admin') navigate('/admin/dashboard')
+      else if (profile?.role === 'provider') navigate('/provider/dashboard')
+      else navigate('/customer/dashboard')
     }
+  } catch (err) {
+    if (err.message.includes('Invalid login credentials')) setError(text.wrongPassword)
+    else if (err.message.includes('Email not confirmed')) setError(text.verifyEmail)
+    else setError(err.message)
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-white" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
