@@ -9,7 +9,7 @@ export default function ProviderProfile() {
   const [user, setUser] = useState(null)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
-  const navigate = useNavigate()
+  
   useEffect(() => { getCurrentUser().then(setUser) }, [])
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
