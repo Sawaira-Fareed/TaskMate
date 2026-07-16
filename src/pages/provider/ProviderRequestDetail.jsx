@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, MapPin, Calendar, DollarSign, Check, X, Clock, Play } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
+import { handleProviderResponse } from '@/api/handleProviderResponse'
 
 export default function ProviderRequestDetail() {
   const { id } = useParams()
@@ -23,29 +24,25 @@ export default function ProviderRequestDetail() {
         const { data } = await supabase.from('requests').select('*').eq('id', id).single()
         setRequest(data)
 
-        // Check if provider already responded
         const user = await getCurrentUser()
         const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
         if (provider) {
-          const { data: existing } = await supabase.from('provider_responses').select('id').eq('request_id', id).eq('provider_id', provider.id).maybeSingle()
+          const { data: existing } = await supabase
+            .from('provider_responses')
+            .select('id')
+            .eq('request_id', id)
+            .eq('provider_id', provider.id)
+            .maybeSingle()
           if (existing) setAlreadyResponded(true)
         }
-      } catch (err) { console.error(err) }
-      finally { setLoading(false) }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [id])
-
-  async function logAudit(eventType, providerId) {
-    await supabase.from('audit_logs').insert({
-      request_id: id,
-      provider_id: providerId,
-      event_type: eventType,
-      event_data: { responded_at: new Date().toISOString() },
-      status_before: request?.status,
-      status_after: eventType === 'provider_accepted' ? 'confirmed' : request?.status,
-    })
-  }
 
   const handleAccept = async () => {
     if (alreadyResponded) return
@@ -53,12 +50,8 @@ export default function ProviderRequestDetail() {
     try {
       const user = await getCurrentUser()
       const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
-
-      await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'accepted' })
-      await supabase.from('bookings').insert({ request_id: id, customer_id: request.customer_id, provider_id: provider.id, service_type: request.service_type, scheduled_date: request.preferred_date, scheduled_time: request.preferred_time, status: 'confirmed' })
-      await supabase.from('requests').update({ status: 'confirmed' }).eq('id', id)
-      await logAudit('provider_accepted', provider.id)
-      navigate('/provider/dashboard')
+      await handleProviderResponse(id, provider.id, 'accepted')
+      navigate('/provider/jobs')
     } catch (err) {
       alert('Failed: ' + err.message)
     } finally {
@@ -72,8 +65,7 @@ export default function ProviderRequestDetail() {
     try {
       const user = await getCurrentUser()
       const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
-      await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'declined' })
-      await logAudit('provider_declined', provider.id)
+      await handleProviderResponse(id, provider.id, 'declined')
       navigate('/provider/dashboard')
     } catch (err) {
       alert('Failed: ' + err.message)
@@ -88,8 +80,7 @@ export default function ProviderRequestDetail() {
     try {
       const user = await getCurrentUser()
       const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
-      await supabase.from('provider_responses').insert({ request_id: id, provider_id: provider.id, response_type: 'counter_offer', proposed_time: counterPrice })
-      await logAudit('counter_offered', provider.id)
+      await handleProviderResponse(id, provider.id, 'counter_offer', counterPrice)
       navigate('/provider/dashboard')
     } catch (err) {
       alert('Failed: ' + err.message)

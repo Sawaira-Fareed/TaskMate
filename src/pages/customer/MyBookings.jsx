@@ -43,11 +43,11 @@ export default function MyBookings() {
     return styles[s] || 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }
 
-  const filtered = bookings.filter(b =>
-    activeTab === 'upcoming' ? b.status === 'confirmed' :
-    activeTab === 'completed' ? b.status === 'completed' :
-    b.status === 'cancelled'
-  )
+const filtered = bookings.filter(b =>
+  activeTab === 'upcoming' ? ['confirmed'].includes(b.status) :
+  activeTab === 'completed' ? ['completed'].includes(b.status) :
+  ['cancelled'].includes(b.status)
+)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
@@ -89,8 +89,14 @@ export default function MyBookings() {
                   <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(b.status)}`}>{b.status}</span>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                  <Calendar className="w-3.5 h-3.5" /> {b.scheduled_date} • {b.scheduled_time}
-                </div>
+  <Calendar className="w-3.5 h-3.5" /> {b.scheduled_date} • {b.scheduled_time}
+</div>
+{b.rating && (
+  <div className="flex items-center gap-1 mt-1">
+    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+    <span className="text-xs text-amber-600 dark:text-amber-400">{b.rating}/5</span>
+  </div>
+)}
                 {b.status === 'completed' && !b.rating && (
                   <button onClick={() => navigate(`/customer/rate/${b.id}`)} className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-medium mt-3 hover:text-purple-700 dark:hover:text-purple-300">
                     <Star className="w-4 h-4" /> {t('Rate Provider', 'پرووائیڈر کو ریٹ کریں')}

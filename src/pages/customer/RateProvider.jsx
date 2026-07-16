@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, Send } from 'lucide-react'
+import { Star, Send, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function RateProvider() {
@@ -11,6 +11,7 @@ export default function RateProvider() {
   const [hover, setHover] = useState(0)
   const [review, setReview] = useState('')
   const [loading, setLoading] = useState(false)
+  const [alreadyRated, setAlreadyRated] = useState(false)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
 
@@ -18,32 +19,84 @@ export default function RateProvider() {
     if (!rating) return
     setLoading(true)
     try {
+      // Check if already rated
+      const { data: existing } = await supabase
+        .from('bookings')
+        .select('rating')
+        .eq('id', bookingId)
+        .single()
+
+      if (existing?.rating) {
+        setAlreadyRated(true)
+        setTimeout(() => navigate('/customer/bookings', { replace: true }), 1500)
+        return
+      }
+
       // Update booking rating
-      const { data: booking } = await supabase
+      const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .update({ rating, rated_at: new Date() })
         .eq('id', bookingId)
-        .select('provider_id, customer_id')
+        .select('provider_id, customer_id, service_type')
         .single()
 
+      if (bookingError) throw bookingError
+
       // Insert into provider_feedback
-      if (booking) {
-        await supabase.from('provider_feedback').insert({
-          booking_id: bookingId,
-          customer_id: booking.customer_id,
-          provider_id: booking.provider_id,
-          rating,
-          review_text: review || null,
-          is_public: true,
-        })
+      await supabase.from('provider_feedback').insert({
+        booking_id: bookingId,
+        customer_id: booking.customer_id,
+        provider_id: booking.provider_id,
+        rating,
+        review_text: review || null,
+        is_public: true,
+      })
+
+      // Update provider's average rating
+      const { data: allRatings } = await supabase
+        .from('provider_feedback')
+        .select('rating')
+        .eq('provider_id', booking.provider_id)
+
+      if (allRatings && allRatings.length > 0) {
+        const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
+        const { error: updateError } = await supabase
+          .from('providers')
+          .update({ 
+            avg_rating: Math.round(avg * 100) / 100,
+            total_jobs: allRatings.length 
+          })
+          .eq('id', booking.provider_id)
+        if (updateError) console.error('Failed to update provider rating:', updateError)
       }
 
-      navigate('/customer/bookings')
+      // Log audit
+      await supabase.from('audit_logs').insert({
+        request_id: null,
+        customer_id: booking.customer_id,
+        provider_id: booking.provider_id,
+        event_type: 'provider_rated',
+        event_data: { booking_id: bookingId, rating },
+      })
+
+      navigate('/customer/bookings', { replace: true })
     } catch (err) {
       alert('Failed to submit rating: ' + err.message)
     } finally {
       setLoading(false)
     }
+  }
+
+  if (alreadyRated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-center max-w-sm">
+          <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+          <p className="text-lg font-semibold text-gray-900 dark:text-white">{t('Already Rated!', 'پہلے ہی ریٹ کر دیا ہے!')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Redirecting...', 'ری ڈائریکٹ ہو رہا ہے...')}</p>
+        </div>
+      </div>
+    )
   }
 
   return (

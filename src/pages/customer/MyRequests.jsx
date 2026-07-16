@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, ChevronRight, ArrowLeft } from 'lucide-react'
+import { Clock, ChevronRight, ArrowLeft, X, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
 
@@ -15,24 +15,50 @@ export default function MyRequests() {
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
 
   useEffect(() => {
-    async function load() {
-      try {
-        const user = await getCurrentUser()
-        const { data, error } = await supabase.from('requests').select('*').eq('customer_id', user.id).order('created_at', { ascending: false })
-        if (error) throw error
-        setRequests(data || [])
-      } catch (err) {
-        console.error('Failed to load:', err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    loadRequests()
+
+    // Realtime subscription
+    const user = getCurrentUser()
+    if (!user) return
+    const channel = supabase
+      .channel('my-requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        () => loadRequests()
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
+
+  async function loadRequests() {
+    try {
+      const user = await getCurrentUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('requests')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('created_at', { ascending: false })
+      setRequests(data || [])
+    } catch (err) {
+      console.error('Failed to load:', err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function cancelRequest(id) {
+    if (!confirm(t('Cancel this request?', 'درخواست منسوخ کریں؟'))) return
+    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', id)
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r))
+  }
 
   const tabs = [
     { id: 'active', en: 'Active', ur: 'فعال', filter: (r) => ['pending', 'parsed', 'contacting', 'offered'].includes(r.status) },
-    { id: 'completed', en: 'Completed', ur: 'مکمل', filter: (r) => r.status === 'confirmed' },
+    { id: 'confirmed', en: 'Confirmed', ur: 'تصدیق شدہ', filter: (r) => r.status === 'confirmed' },
+    { id: 'completed', en: 'Completed', ur: 'مکمل', filter: (r) => r.status === 'completed' },
     { id: 'cancelled', en: 'Cancelled', ur: 'منسوخ', filter: (r) => ['cancelled', 'expired', 'declined', 'no_provider'].includes(r.status) },
   ]
 
@@ -50,6 +76,12 @@ export default function MyRequests() {
       no_provider: 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     }
     return map[status] || 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+  }
+
+  const statusIcon = (status) => {
+    if (['completed', 'confirmed'].includes(status)) return <Check className="w-3 h-3" />
+    if (['cancelled', 'declined', 'expired', 'no_provider'].includes(status)) return <X className="w-3 h-3" />
+    return <Clock className="w-3 h-3" />
   }
 
   const activeTabObj = tabs.find(tab => tab.id === activeTab)
@@ -71,9 +103,9 @@ export default function MyRequests() {
       </header>
 
       <div className="max-w-2xl mx-auto p-4">
-        <div className="flex gap-2 mb-4 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-100 dark:border-gray-700">
+        <div className="flex gap-1 mb-4 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-100 dark:border-gray-700 overflow-x-auto">
           {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab.id ? 'bg-purple-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all whitespace-nowrap px-2 ${activeTab === tab.id ? 'bg-purple-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
               {lang === 'ur' ? tab.ur : tab.en}
             </button>
           ))}
@@ -90,17 +122,29 @@ export default function MyRequests() {
         ) : (
           <div className="space-y-3">
             {filtered.map(req => (
-              <button key={req.id} onClick={() => navigate(`/customer/request/${req.id}`)} className="block w-full bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all text-left">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{req.service_type || t('Service Request', 'سروس کی درخواست')}</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(req.status)}`}>{req.status}</span>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{req.raw_text}</p>
-                <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-                  <span>{new Date(req.created_at).toLocaleDateString()}</span>
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              </button>
+              <div key={req.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all">
+                <button onClick={() => navigate(`/customer/request/${req.id}`)} className="w-full text-left">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{req.service_type || t('Service Request', 'سروس کی درخواست')}</span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 ${statusBadge(req.status)}`}>
+                      {statusIcon(req.status)}{req.status}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 line-clamp-2">{req.raw_text}</p>
+                  <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
+                    <span>{new Date(req.created_at).toLocaleDateString()}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </button>
+                {['pending', 'parsed', 'contacting', 'offered'].includes(req.status) && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); cancelRequest(req.id) }}
+                    className="mt-2 w-full py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    {t('Cancel', 'منسوخ کریں')}
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         )}

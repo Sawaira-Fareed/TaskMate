@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Check, Clock, AlertTriangle, Zap, Wrench, Plug, ShoppingBag, Monitor, MapPin, Calendar, DollarSign, Mic, Send, Square } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
+import { parseIntent } from '@/api/parseIntent'
+import { matchProviders } from '@/api/matchProviders'
+import { contactProviderLoop } from '@/api/contactProviderLoop'
 
 const STEPS = ['Priority', 'Service', 'Details', 'Review']
 
@@ -90,40 +93,93 @@ export default function CreateRequest() {
   }
 
   const handleSubmit = async () => {
-    setError('')
-    setLoading(true)
-    try {
-      const user = await getCurrentUser()
+  setError('')
+  setLoading(true)
+  try {
+    const user = await getCurrentUser()
 
-      let voiceNoteUrl = null
-      if (voiceBlob) {
-        const fileName = `voice-notes/${user.id}/${Date.now()}.webm`
-        const { data: uploadData, error: uploadError } = await supabase.storage.from('requests').upload(fileName, voiceBlob)
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage.from('requests').getPublicUrl(fileName)
-          voiceNoteUrl = urlData.publicUrl
-        }
+    // Upload voice note if exists
+    let voiceNoteUrl = null
+    if (voiceBlob) {
+      const fileName = `voice-notes/${user.id}/${Date.now()}.webm`
+      const { data: uploadData, error: uploadError } = await supabase.storage.from('requests').upload(fileName, voiceBlob)
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage.from('requests').getPublicUrl(fileName)
+        voiceNoteUrl = urlData.publicUrl
       }
+    }
 
-      const { error: insertError } = await supabase.from('requests').insert({
-        customer_id: user.id,
-        raw_text: description || '(Voice note attached)',
+    // Build raw text for AI parsing
+    const rawText = description || `Need ${serviceType} service at ${location}`
+
+    // 1. Parse intent with AI
+    let parsedIntent
+    try {
+      parsedIntent = await parseIntent(rawText)
+    } catch (parseErr) {
+      console.warn('AI parsing failed, using form data:', parseErr.message)
+      parsedIntent = {
         service_type: serviceType,
         preferred_date: date,
         preferred_time: timeFrom,
-        city: 'Jand',
-        status: 'pending',
-        parsed_intent: { priority, time_from: timeFrom, time_to: timeTo, price, location, voice_note_url: voiceNoteUrl },
-      })
-      if (insertError) throw insertError
-      navigate('/customer/my-requests')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+        language: lang,
+        urgency: priority,
+        items: []
+      }
     }
-  }
 
+    // Merge AI results with user selections (user selections take priority)
+    parsedIntent.service_type = serviceType || parsedIntent.service_type
+    parsedIntent.preferred_date = date || parsedIntent.preferred_date
+    parsedIntent.preferred_time = timeFrom || parsedIntent.preferred_time
+    parsedIntent.urgency = priority || parsedIntent.urgency
+
+    // 2. Save request to database
+    const { data: request, error: insertError } = await supabase
+      .from('requests')
+      .insert({
+        customer_id: user.id,
+        raw_text: rawText,
+        service_type: parsedIntent.service_type,
+        items: parsedIntent.items || [],
+        preferred_date: parsedIntent.preferred_date,
+        preferred_time: parsedIntent.preferred_time,
+        city: 'Jand',
+        language: parsedIntent.language || 'urdu',
+        status: 'pending',
+        parsed_intent: {
+          ...parsedIntent,
+          time_from: timeFrom,
+          time_to: timeTo,
+          price,
+          location,
+          voice_note_url: voiceNoteUrl,
+          description
+        },
+        expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
+      })
+      .select()
+      .single()
+
+    if (insertError) throw insertError
+
+    // 3. Find matching providers (fire and forget — runs in background)
+    matchProviders(parsedIntent, user.id)
+      .then(providers => {
+        if (providers && providers.length > 0) {
+          contactProviderLoop(request.id, providers)
+        }
+      })
+      .catch(err => console.error('Matching failed:', err))
+
+    // 4. Navigate to request tracking page
+    navigate(`/customer/request/${request.id}`)
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setLoading(false)
+  }
+}
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-start justify-center p-4 pt-20" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-lg">

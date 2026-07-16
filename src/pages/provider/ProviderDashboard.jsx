@@ -4,6 +4,8 @@ import { Clock, CheckCircle, DollarSign, Star, ChevronRight, LogOut, Home, Clipb
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
+import { useRealtimeRequests } from '@/hooks/useRealtimeRequests'
+
 
 export default function ProviderDashboard() {
   const navigate = useNavigate()
@@ -11,7 +13,6 @@ export default function ProviderDashboard() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [user, setUser] = useState(null)
   const [provider, setProvider] = useState(null)
-  const [incomingRequests, setIncomingRequests] = useState([])
   const [myJobs, setMyJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -19,43 +20,37 @@ export default function ProviderDashboard() {
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const currentUser = await getCurrentUser()
-        setUser(currentUser)
+  const { requests: incomingRequests, loading: requestsLoading } = useRealtimeRequests(user?.id)
+useEffect(() => {
+  async function loadProvider() {
+    const currentUser = await getCurrentUser()
+    setUser(currentUser)
+    const { data: providerData } = await supabase.from('providers').select('*, avg_rating, total_jobs').eq('user_id', currentUser.id).single()
+    setProvider(providerData)
+  }
+  loadProvider()
+}, [])
 
-        const { data: providerData } = await supabase.from('providers').select('*').eq('user_id', currentUser.id).single()
-        setProvider(providerData)
 
-        // Only fetch requests matching provider's service types
-        if (providerData?.service_types?.length > 0) {
-          const { data: requests } = await supabase
-            .from('requests')
-            .select('*')
-            .in('status', ['pending', 'contacting'])
-            .in('service_type', providerData.service_types)
-            .eq('city', 'Jand')
-            .order('created_at', { ascending: false })
-            .limit(10)
-          setIncomingRequests(requests || [])
-        }
+useEffect(() => {
+  if (!provider?.id) return
+  async function loadJobs() {
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('provider_id', provider.id)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    setMyJobs(bookings || [])
+  }
+  loadJobs()
+}, [provider])
 
-        const { data: bookings } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('provider_id', providerData?.id)
-          .order('created_at', { ascending: false })
-          .limit(10)
-        setMyJobs(bookings || [])
-      } catch (err) {
-        console.error('Failed to load:', err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+useEffect(() => {
+  if (user && provider && !requestsLoading) {
+    setLoading(false)
+  }
+}, [user, provider, requestsLoading])
 
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 

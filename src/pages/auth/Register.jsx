@@ -140,9 +140,16 @@ export default function Register() {
 
       if (formData.role === 'provider') {
         const { error: providerError } = await supabase.from('providers').insert({
-          user_id: authData.user.id, service_types: [formData.selectedService],
-          phone: formData.phone, is_approved: false, is_online: false, tier: 'bronze',
-        });
+  user_id: authData.user.id,
+  service_types: [formData.selectedService],
+  phone: formData.phone,
+  is_approved: false,
+  is_online: false,
+  tier: 'bronze',
+  experience: formData.experience || null,
+  bio: formData.bio || null,
+  certificate_url: certificateUrl || null,
+});
         if (providerError) throw providerError;
         navigate('/provider/waiting-approval');
       } else {

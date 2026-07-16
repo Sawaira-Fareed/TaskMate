@@ -42,6 +42,60 @@ export default function CustomerHome() {
     loadData()
   }, [])
 
+
+  // Realtime subscriptions for live updates
+useEffect(() => {
+  if (!user?.id) return
+
+  // Listen for booking confirmations
+  const bookingsChannel = supabase
+    .channel('customer-bookings')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'bookings', filter: `customer_id=eq.${user.id}` },
+      () => {
+        // Refresh bookings when new one created
+        supabase
+          .from('bookings')
+          .select('*')
+          .eq('customer_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5)
+          .then(({ data }) => {
+            if (data) setRecentBookings(data)
+          })
+      }
+    )
+    .subscribe()
+
+  // Listen for request status changes
+  const requestsChannel = supabase
+    .channel('customer-requests')
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'requests', filter: `customer_id=eq.${user.id}` },
+      () => {
+        // Refresh active requests
+        supabase
+          .from('requests')
+          .select('*')
+          .eq('customer_id', user.id)
+          .in('status', ['pending', 'parsed', 'contacting', 'offered'])
+          .order('created_at', { ascending: false })
+          .limit(5)
+          .then(({ data }) => {
+            if (data) setActiveRequests(data)
+          })
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(bookingsChannel)
+    supabase.removeChannel(requestsChannel)
+  }
+}, [user])
+
   const handleSignOut = async () => { await signOut(); navigate('/login') }
 
   const statusBadge = (status) => {
