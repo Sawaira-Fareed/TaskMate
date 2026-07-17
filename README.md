@@ -1,16 +1,15 @@
 # Zaria — Your Medium to Everything
 
-![Vite](https://img.shields.io/badge/Vite-6.x-purple)
-![React](https://img.shields.io/badge/React-19-blue)
-![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-cyan)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![Vite](https://img.shields.io/badge/Vite-6.x-purple) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![React](https://img.shields.io/badge/React-19-blue) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-cyan) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![PWA](https://img.shields.io/badge/PWA-Ready-orange)
 
 ## Overview
 
-**Zaria** is a Progressive Web Application that connects customers with local service providers in Pakistan. Just type what you need in Urdu or English — AI handles the rest.
-
-No phone calls. No manual searching. Just describe your problem and get matched with the nearest available provider.
+**Zaria** is a Progressive Web Application that connects customers with local service providers in Pakistan.No phone calls. No manual searching. Just describe your problem and get matched with the nearest available provider.
 
 ---
 
@@ -20,18 +19,23 @@ No phone calls. No manual searching. Just describe your problem and get matched 
 
 ---
 
-## Features
+## What Zaria Solves
 
-- 🔍 **AI-Powered Request Parsing** — Type in plain Urdu or English
-- 🎯 **Smart Provider Matching** — Sorted by distance, rating, and tier
-- ⚡ **Real-Time Updates** — Live status on all dashboards via Supabase Realtime
-- 📱 **PWA** — Install on mobile, works offline, push notifications
-- 🎤 **Voice Notes** — Record and send audio messages with requests
-- ⭐ **Rating System** — Rate providers after job completion
-- 🛡️ **CNIC Verification** — Identity verification with camera upload
-- 👑 **Admin Dashboard** — Approve, reject with reason, or permanently block providers
-- 🌙 **Dark Mode** — Full light/dark theme toggle
-- 🌐 **Bilingual** — Urdu and English throughout the entire app
+- **No more phone calls.** You don't need to call multiple providers, explain your problem repeatedly, or negotiate over the phone. Type once and you're done.
+
+- **No language barrier.** Whether you prefer Urdu or English, the app understands both. Describe your problem in whatever language feels natural.
+
+- **No endless searching.** Stop asking neighbors for plumber numbers or scrolling through Facebook groups. Zaria finds the nearest available provider for you.
+
+- **No uncertainty about who's coming.** Every provider is verified through CNIC checks before they can accept jobs. You know who's entering your home.
+
+- **No guessing about pricing.** You set your budget upfront and providers respond knowing what you're willing to pay.
+
+- **No wondering what's happening.** Track your request in real time — see when a provider is contacted, when they accept, and when your booking is confirmed.
+
+- **No forgetting past jobs.** Your complete booking history is saved, making it easy to book the same trusted provider again.
+
+- **No app to download.** Zaria is a PWA — install it directly from your browser. Works on any phone, takes almost no storage.
 
 ---
 
