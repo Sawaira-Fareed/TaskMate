@@ -1,16 +1,71 @@
-# React + Vite
+# Zaria — Your Medium to Everything
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Vite](https://img.shields.io/badge/Vite-6.x-purple)
+![React](https://img.shields.io/badge/React-19-blue)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-cyan)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)
+![PWA](https://img.shields.io/badge/PWA-Ready-orange)
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Zaria** is a Progressive Web Application that connects customers with local service providers in Pakistan. Just type what you need in Urdu or English — AI handles the rest.
 
-## React Compiler
+No phone calls. No manual searching. Just describe your problem and get matched with the nearest available provider.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Try It
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+🔗 **[zaria-pk.vercel.app](https://zaria-pk.vercel.app)**
+
+---
+
+## Features
+
+- 🔍 **AI-Powered Request Parsing** — Type in plain Urdu or English
+- 🎯 **Smart Provider Matching** — Sorted by distance, rating, and tier
+- ⚡ **Real-Time Updates** — Live status on all dashboards via Supabase Realtime
+- 📱 **PWA** — Install on mobile, works offline, push notifications
+- 🎤 **Voice Notes** — Record and send audio messages with requests
+- ⭐ **Rating System** — Rate providers after job completion
+- 🛡️ **CNIC Verification** — Identity verification with camera upload
+- 👑 **Admin Dashboard** — Approve, reject with reason, or permanently block providers
+- 🌙 **Dark Mode** — Full light/dark theme toggle
+- 🌐 **Bilingual** — Urdu and English throughout the entire app
+
+---
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Vite + React 19 + TailwindCSS |
+| Backend | Supabase (PostgreSQL + Auth + Storage + Realtime) |
+| AI | Gemini API + Groq API (fallback) |
+| PWA | Web Push API, Service Worker |
+| Hosting | Vercel |
+
+---
+
+## Test Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Customer | `customer@gmail.com` | `customer123` |
+| Provider | `provider@gmail.com` | `provider123` |
+| Admin | `admin@gmail.com` | `admin123` |
+
+> Providers must be approved by an admin before receiving requests.
+
+---
+
+## Team
+
+- Hanzala Ahsan
+- Sawaira Fareed
+
+---
+
+## License
+
+© 2026 Zaria. All rights reserved.
