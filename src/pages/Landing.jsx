@@ -150,10 +150,23 @@ export default function Landing() {
                 <ThemeToggle />
               </div>
               {isAuthenticated ? (
-                <button onClick={handleDashboardClick} className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-5 py-2.5 transition-all shadow-sm flex items-center gap-2">
-                  <LayoutDashboard className="w-4 h-4" /> {t('Dashboard', 'ڈیش بورڈ')}
-                </button>
-              ) : (
+  <div className="flex items-center gap-2">
+    <button onClick={handleDashboardClick} className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-5 py-2.5 transition-all shadow-sm flex items-center gap-2">
+      <LayoutDashboard className="w-4 h-4" /> {t('Dashboard', 'ڈیش بورڈ')}
+    </button>
+    <button
+      onClick={async () => {
+        await supabase.auth.signOut()
+        setIsAuthenticated(false)
+        setUserRole(null)
+        navigate('/')
+      }}
+      className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-red-500 px-3 py-2 transition-colors"
+    >
+      {t('Sign Out', 'سائن آؤٹ')}
+    </button>
+  </div>
+) : (
                 <>
                   <Link to="/login" className="text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-purple-600 px-3 py-2">{t('Login', 'لاگ ان')}</Link>
                   <Link to="/register" className="text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg px-5 py-2.5 transition-all shadow-sm">{t('Get Started', 'شروع کریں')}</Link>
@@ -170,9 +183,22 @@ export default function Landing() {
             <a href="#reviews" className="block text-sm py-2 text-gray-600 dark:text-gray-300">{t('Reviews', 'جائزے')}</a>
             <button onClick={scrollToContact} className="block text-sm py-2 text-gray-600 dark:text-gray-300 w-full text-left">{t('Contact', 'رابطہ')}</button>
             <div className="flex gap-2 pt-2">
-              {isAuthenticated ? (
-                <button onClick={handleDashboardClick} className="flex-1 text-center text-sm text-white bg-purple-600 rounded-lg py-2.5">{t('Dashboard', 'ڈیش بورڈ')}</button>
-              ) : (
+             {isAuthenticated ? (
+  <div className="flex gap-2">
+    <button onClick={handleDashboardClick} className="flex-1 text-center text-sm text-white bg-purple-600 rounded-lg py-2.5">{t('Dashboard', 'ڈیش بورڈ')}</button>
+    <button
+      onClick={async () => {
+        await supabase.auth.signOut()
+        setIsAuthenticated(false)
+        setUserRole(null)
+        navigate('/')
+      }}
+      className="flex-1 text-center text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2.5"
+    >
+      {t('Sign Out', 'سائن آؤٹ')}
+    </button>
+  </div>
+) : (
                 <>
                   <Link to="/login" className="flex-1 text-center text-sm border border-gray-300 dark:border-gray-700 rounded-lg py-2.5 text-gray-700 dark:text-gray-300">{t('Login', 'لاگ ان')}</Link>
                   <Link to="/register" className="flex-1 text-center text-sm text-white bg-purple-600 rounded-lg py-2.5">{t('Get Started', 'شروع کریں')}</Link>

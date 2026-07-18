@@ -292,7 +292,25 @@ async function checkEmail(email) {
                 <button type="button" onClick={() => triggerFileUpload('certificate', false)} className="flex flex-col items-center gap-2 p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-blue-500 dark:hover:border-blue-400 w-full"><Award size={32} className="text-gray-400 dark:text-gray-500" /><span className="text-sm text-gray-600 dark:text-gray-400">Upload Certificate (PDF/Image)</span></button>
               )}
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Years of Experience</label><input type="number" value={formData.experience} onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))} min="0" max="50" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" /></div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Years of Experience</label>
+  <div className="grid grid-cols-3 gap-2">
+    {['< 1 year', '1 year', '2 years', '3 years', '4 years', '5+ years'].map(exp => (
+      <button
+        key={exp}
+        type="button"
+        onClick={() => setFormData(prev => ({ ...prev, experience: exp }))}
+        className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+          formData.experience === exp
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+        }`}
+      >
+        {exp}
+      </button>
+    ))}
+  </div>
+</div>
             <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Short Bio</label><textarea value={formData.bio} onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))} rows={3} className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="Tell customers about yourself..." /></div>
           </div>
         )}

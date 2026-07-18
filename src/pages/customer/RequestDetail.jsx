@@ -210,16 +210,13 @@ async function handleMarkDone() {
           <h2 className="font-semibold text-gray-900 dark:text-white capitalize">{request.service_type}</h2>
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <span>{request.preferred_date} • {request.preferred_time}</span>
+            <span>{request.preferred_date} • {(() => { if (!request.preferred_time) return ''; const [h, m] = request.preferred_time.split(':'); const hour = parseInt(h); const ampm = hour >= 12 ? 'PM' : 'AM'; const h12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour); return `${h12}:${m} ${ampm}` })()}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
             <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
             <span>{request.parsed_intent?.location || 'Jand'}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-            <DollarSign className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-            <span>PKR {request.parsed_intent?.price || 'N/A'}</span>
-          </div>
+          
           <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-xl p-3">{request.raw_text}</p>
 
           {request.parsed_intent?.voice_note_url && (
@@ -266,7 +263,7 @@ async function handleMarkDone() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
               {pendingCounter.provider?.user?.full_name || t('Provider', 'پرووائیڈر')} {t('suggests', 'تجویز کرتا ہے')}:
             </p>
-            <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4">PKR {pendingCounter.proposed_time}</p>
+            <p className="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4">{pendingCounter.proposed_time}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => handleCounterResponse(true)}
@@ -308,9 +305,9 @@ async function handleMarkDone() {
                        t('Offered', 'پیشکش کی')}
                     </span>
                   </div>
-                  {r.proposed_time && (
-                    <span className="text-xs font-medium text-orange-600 dark:text-orange-400">PKR {r.proposed_time}</span>
-                  )}
+                 {r.proposed_time && (
+  <span className="text-xs font-medium text-orange-600 dark:text-orange-400">{r.proposed_time}</span>
+)}
                 </div>
               ))}
             </div>

@@ -24,12 +24,11 @@ export default function MobileBottomNav({ role = 'customer' }) {
     { icon: User, label: 'Profile', path: '/provider/profile' },
   ]
 
-  const adminLinks = [
-    { icon: Home, label: 'Home', path: '/admin/dashboard' },
-    { icon: ClipboardList, label: 'Approvals', path: '/admin/approvals' },
-    { icon: User, label: 'Profile', path: '/admin/dashboard' },
-  ]
-
+ const adminLinks = [
+  { icon: Home, label: 'Home', path: '/admin/dashboard' },
+  { icon: ClipboardList, label: 'Approvals', path: '/admin/approvals' },
+  { icon: User, label: 'Platform', path: '/admin/platform' },
+]
   const links = role === 'provider' ? providerLinks : role === 'admin' ? adminLinks : customerLinks
 
   return (

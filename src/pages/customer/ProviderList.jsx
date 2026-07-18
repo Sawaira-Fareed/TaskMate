@@ -80,8 +80,8 @@ export default function ProviderList() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 pb-3 overflow-x-auto">
-        <div className="flex gap-2">
+<div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 pb-3">
+  <div className="flex flex-wrap gap-2">
           {serviceTypes.map(s => (
             <button key={s.id} onClick={() => setActiveFilter(s.id)} className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeFilter === s.id ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 dark:shadow-purple-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
               <s.icon className="w-4 h-4" /> {lang === 'ur' ? s.labelUr : s.label}
@@ -120,8 +120,7 @@ export default function ProviderList() {
               <div
                 key={p.id}
                 onClick={() => navigate(`/customer/provider/${p.id}`)}
-              className="relative bg-[#f5f0ff] dark:bg-gray-800 rounded-2xl... shadow-sm border border-purple-100/40 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]"
-              >
+             className="relative bg-[#f5f0ff] dark:bg-gray-800 rounded-2xl shadow-sm border border-purple-100/40 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
 
         <div className="absolute top-0 right-0 w-[28%] h-full rounded-2xl overflow-hidden" style={{ clipPath: 'polygon(35% 0, 100% 0, 100% 100%, 0% 100%)' }}>
   <div className={`w-full h-full bg-gradient-to-br ${gradient} opacity-100 dark:opacity-70`} />

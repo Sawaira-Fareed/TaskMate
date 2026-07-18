@@ -176,7 +176,7 @@ export default function AdminApprovals() {
                       <div className="flex items-center gap-2 text-sm"><Mail className="w-4 h-4 text-gray-400 flex-shrink-0" /><span className="text-gray-700 dark:text-gray-300 truncate">{p.user?.email || 'N/A'}</span></div>
                       <div className="flex items-center gap-2 text-sm"><Phone className="w-4 h-4 text-gray-400 flex-shrink-0" /><span className="text-gray-700 dark:text-gray-300">{p.user?.phone || 'N/A'}</span></div>
                       <div className="flex items-center gap-2 text-sm"><FileText className="w-4 h-4 text-gray-400 flex-shrink-0" /><span className="text-gray-700 dark:text-gray-300">CNIC: {p.user?.cnic_number || 'N/A'}</span></div>
-                      <div className="flex items-center gap-2 text-sm"><Award className="w-4 h-4 text-gray-400 flex-shrink-0" /><span className="text-gray-700 dark:text-gray-300">{p.experience ? `${p.experience} years` : 'Experience: N/A'}</span></div>
+                      <div className="flex items-center gap-2 text-sm"><Award className="w-4 h-4 text-gray-400 flex-shrink-0" /><span className="text-gray-700 dark:text-gray-300">{p.experience ? `${p.experience} ` : 'Experience: N/A'}</span></div>
                     </div>
                     {p.user?.address && <div><p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t('Address', 'پتہ')}</p><p className="text-sm text-gray-600 dark:text-gray-400">{p.user.address}</p></div>}
                     {(p.user?.cnic_front_url || p.user?.cnic_back_url) && (
