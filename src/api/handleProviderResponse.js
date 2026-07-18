@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import { incrementBookingCount } from './checkPlanLimit'
 
 /**
  * Processes provider's response to a request
@@ -76,6 +77,8 @@ async function handleAcceptance(requestId, providerId, request) {
     .single()
 
   if (error) throw error
+  // After booking created, increment weekly count
+await incrementBookingCount(providerId)
 
   // Update request status
   await supabase

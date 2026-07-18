@@ -1,5 +1,5 @@
-// src/App.jsx
 import { Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import LanguageSelect from './pages/auth/LanguageSelect';
@@ -26,11 +26,13 @@ import ProviderProfile from './pages/provider/ProviderProfile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminPlatform from './pages/admin/AdminPlatform';
+import ProviderList from './pages/customer/ProviderList';
+import ProviderDetail from './pages/customer/ProviderDetail';
 
 export default function App() {
   return (
     <Routes>
-      {/* Public Routes - No auth required */}
+      {/* Public Routes - No auth required, no Layout */}
       <Route path="/" element={<Landing />} />
       <Route path="/language" element={<LanguageSelect />} />
       <Route path="/login" element={<Login />} />
@@ -40,98 +42,73 @@ export default function App() {
       <Route path="/faq" element={<FAQ />} />
       <Route path="/email-verified" element={<EmailVerified />} />
 
-      {/* Customer Routes - Protected, only customers */}
-      <Route path="/customer/dashboard" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <CustomerHome />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/create-request" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <CreateRequest />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/my-requests" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <MyRequests />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/request/:id" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <RequestDetail />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/bookings" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <MyBookings />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/rate/:bookingId" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <RateProvider />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/notifications" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <CustomerNotifications />
-        </ProtectedRoute>
-      } />
-      <Route path="/customer/profile" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <CustomerProfile />
-        </ProtectedRoute>
-      } />
+      {/* Protected Routes - All wrapped in Layout for mobile bottom nav */}
+      <Route element={<Layout />}>
+        {/* Customer Routes */}
+        <Route path="/customer/dashboard" element={
+          <ProtectedRoute allowedRoles={['customer']}><CustomerHome /></ProtectedRoute>
+        } />
+        <Route path="/customer/create-request" element={
+          <ProtectedRoute allowedRoles={['customer']}><CreateRequest /></ProtectedRoute>
+        } />
+        <Route path="/customer/my-requests" element={
+          <ProtectedRoute allowedRoles={['customer']}><MyRequests /></ProtectedRoute>
+        } />
+        <Route path="/customer/request/:id" element={
+          <ProtectedRoute allowedRoles={['customer']}><RequestDetail /></ProtectedRoute>
+        } />
+        <Route path="/customer/bookings" element={
+          <ProtectedRoute allowedRoles={['customer']}><MyBookings /></ProtectedRoute>
+        } />
+        <Route path="/customer/rate/:bookingId" element={
+          <ProtectedRoute allowedRoles={['customer']}><RateProvider /></ProtectedRoute>
+        } />
+        <Route path="/customer/notifications" element={
+          <ProtectedRoute allowedRoles={['customer']}><CustomerNotifications /></ProtectedRoute>
+        } />
+        <Route path="/customer/profile" element={
+          <ProtectedRoute allowedRoles={['customer']}><CustomerProfile /></ProtectedRoute>
+        } />
+        <Route path="/customer/providers" element={
+          <ProtectedRoute allowedRoles={['customer']}><ProviderList /></ProtectedRoute>
+        } />
+        <Route path="/customer/provider/:id" element={
+          <ProtectedRoute allowedRoles={['customer']}><ProviderDetail /></ProtectedRoute>
+        } />
 
-      {/* Provider Routes - Protected, only providers (and must be approved) */}
-      <Route path="/provider/dashboard" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <ProviderDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/provider/request/:id" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <ProviderRequestDetail />
-        </ProtectedRoute>
-      } />
-      <Route path="/provider/jobs" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <ProviderJobs />
-        </ProtectedRoute>
-      } />
-      <Route path="/provider/notifications" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <ProviderNotifications />
-        </ProtectedRoute>
-      } />
-      <Route path="/provider/profile" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <ProviderProfile />
-        </ProtectedRoute>
-      } />
-      <Route path="/provider/waiting-approval" element={
-        <ProtectedRoute allowedRoles={['provider']}>
-          <WaitingApproval />
-        </ProtectedRoute>
-      } />
+        {/* Provider Routes */}
+        <Route path="/provider/dashboard" element={
+          <ProtectedRoute allowedRoles={['provider']}><ProviderDashboard /></ProtectedRoute>
+        } />
+        <Route path="/provider/request/:id" element={
+          <ProtectedRoute allowedRoles={['provider']}><ProviderRequestDetail /></ProtectedRoute>
+        } />
+        <Route path="/provider/jobs" element={
+          <ProtectedRoute allowedRoles={['provider']}><ProviderJobs /></ProtectedRoute>
+        } />
+        <Route path="/provider/notifications" element={
+          <ProtectedRoute allowedRoles={['provider']}><ProviderNotifications /></ProtectedRoute>
+        } />
+        <Route path="/provider/profile" element={
+          <ProtectedRoute allowedRoles={['provider']}><ProviderProfile /></ProtectedRoute>
+        } />
+        <Route path="/provider/waiting-approval" element={
+          <ProtectedRoute allowedRoles={['provider']}><WaitingApproval /></ProtectedRoute>
+        } />
 
-      {/* Admin Routes - Protected, only admins */}
-      <Route path="/admin/dashboard" element={
-        <ProtectedRoute allowedRoles={['admin']}>
-          <AdminDashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/approvals" element={
-        <ProtectedRoute allowedRoles={['admin']}>
-          <AdminApprovals />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/platform" element={
-        <ProtectedRoute allowedRoles={['admin']}>
-          <AdminPlatform />
-        </ProtectedRoute>
-      } />
+        {/* Admin Routes */}
+        <Route path="/admin/dashboard" element={
+          <ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>
+        } />
+        <Route path="/admin/approvals" element={
+          <ProtectedRoute allowedRoles={['admin']}><AdminApprovals /></ProtectedRoute>
+        } />
+        <Route path="/admin/platform" element={
+          <ProtectedRoute allowedRoles={['admin']}><AdminPlatform /></ProtectedRoute>
+        } />
+      </Route>
 
-      {/* Catch-all - Redirect to landing */}
+      {/* Catch-all */}
       <Route path="*" element={<Landing />} />
     </Routes>
   );

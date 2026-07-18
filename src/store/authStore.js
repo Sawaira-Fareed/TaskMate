@@ -27,10 +27,12 @@ export const useAuthStore = create(
     }),
     {
       name: 'zaria-auth',
-      partialize: (state) => ({ 
-        language: state.language,
-        // Don't persist sensitive auth data
-      }),
+    partialize: (state) => ({ 
+  user: state.user,
+  role: state.role,
+  isAuthenticated: state.isAuthenticated,
+  language: state.language,
+}),
     }
   )
 );
