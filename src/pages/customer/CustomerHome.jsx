@@ -89,6 +89,7 @@ export default function CustomerHome() {
     { icon: Calendar, label: t('Bookings', 'بکنگز'), path: '/customer/bookings' },
     { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/customer/notifications' },
     { icon: User, label: t('Profile', 'پروفائل'), path: '/customer/profile' },
+    { icon: Search, label: t('Providers', 'پرووائیڈرز'), path: '/customer/providers' },
   ]
 
   const displayName = userProfile?.full_name || user?.user_metadata?.full_name || 'User'
