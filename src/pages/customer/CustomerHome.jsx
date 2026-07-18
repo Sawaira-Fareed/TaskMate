@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User } from 'lucide-react'
+import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Search } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -115,6 +115,7 @@ useEffect(() => {
     { icon: Calendar, label: t('Bookings', 'بکنگز'), path: '/customer/bookings' },
     { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/customer/notifications' },
     { icon: User, label: t('Profile', 'پروفائل'), path: '/customer/profile' },
+    { icon: Search, label: t('Providers', 'پرووائیڈرز'), path: '/customer/providers' },
   ]
 
   const displayName = userProfile?.full_name || user?.user_metadata?.full_name || 'User'

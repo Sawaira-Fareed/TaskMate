@@ -26,6 +26,8 @@ import ProviderProfile from './pages/provider/ProviderProfile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminPlatform from './pages/admin/AdminPlatform';
+import ProviderList from './pages/customer/ProviderList';
+import ProviderDetail from './pages/customer/ProviderDetail';
 
 export default function App() {
   return (
@@ -71,6 +73,16 @@ export default function App() {
           <RateProvider />
         </ProtectedRoute>
       } />
+      <Route path="/customer/providers" element={
+  <ProtectedRoute allowedRoles={['customer']}>
+    <ProviderList />
+  </ProtectedRoute>
+} />
+<Route path="/customer/provider/:id" element={
+  <ProtectedRoute allowedRoles={['customer']}>
+    <ProviderDetail />
+  </ProtectedRoute>
+} />
       <Route path="/customer/notifications" element={
         <ProtectedRoute allowedRoles={['customer']}>
           <CustomerNotifications />
