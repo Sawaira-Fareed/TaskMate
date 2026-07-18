@@ -160,17 +160,16 @@ export default function ProviderProfile() {
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('Profile', 'پروفائل')}</h1>
         </div>
         <div className="flex items-center gap-2">
-         <div className="flex items-center gap-2">
-  <div className="flex items-center gap-0.5 bg-purple-50 dark:bg-purple-900/30 p-1 rounded-lg">
-    <button onClick={() => { setLang('en'); localStorage.setItem('zaria-language', 'en') }} className={`px-2 py-1 text-xs font-medium rounded transition-all ${lang === 'en' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>EN</button>
-    <button onClick={() => { setLang('ur'); localStorage.setItem('zaria-language', 'ur') }} className={`px-2 py-1 text-xs font-medium rounded transition-all ${lang === 'ur' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>
-  </div>
-  <ThemeToggle />
-</div>
+          <div className="flex items-center gap-0.5 bg-purple-50 dark:bg-purple-900/30 p-1 rounded-lg">
+            <button onClick={() => { setLang('en'); localStorage.setItem('zaria-language', 'en') }} className={`px-2 py-1 text-xs font-medium rounded transition-all ${lang === 'en' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>EN</button>
+            <button onClick={() => { setLang('ur'); localStorage.setItem('zaria-language', 'ur') }} className={`px-2 py-1 text-xs font-medium rounded transition-all ${lang === 'ur' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto p-4 space-y-4">
+        {/* Avatar Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 text-center">
           <div className="relative inline-block mb-2">
             {avatarPreview ? <img src={avatarPreview} alt="Preview" className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-purple-400" /> : profile?.avatar_url ? <img src={profile.avatar_url} alt="Profile" className="w-24 h-24 rounded-full object-cover mx-auto border-4 border-purple-200 dark:border-purple-700" onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.querySelector('.fb').style.display = 'flex' }} /> : null}
@@ -179,7 +178,7 @@ export default function ProviderProfile() {
           <div className="flex items-center justify-center gap-2">
             <button onClick={triggerCamera} disabled={uploading} className="w-9 h-9 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-700 transition-all shadow-md"><Camera className="w-4 h-4" /></button>
             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-9 h-9 bg-gray-500 text-white rounded-full flex items-center justify-center hover:bg-gray-600 transition-all shadow-md"><Upload className="w-4 h-4" /></button>
-            {profile?.avatar_url && <button onClick={handleRemoveAvatar} className="w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md"><X className="w-4 h-4" /></button>}
+            {profile?.avatar_url && <button onClick={handleRemoveAvatar} className="w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md"><Remove className="w-4 h-4" /></button>}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} />
           </div>
           {uploading && <p className="text-xs text-purple-600 mt-2">Uploading...</p>}
@@ -192,34 +191,35 @@ export default function ProviderProfile() {
           </div>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border"><p className="text-2xl font-bold text-purple-600">{provider?.total_jobs || 0}</p><p className="text-xs text-gray-500">{t('Jobs', 'کام')}</p></div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border"><p className="text-2xl font-bold text-emerald-600">{provider?.acceptance_rate || 0}%</p><p className="text-xs text-gray-500">{t('Accept', 'قبولیت')}</p></div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 text-center border"><p className="text-2xl font-bold text-amber-600">{provider?.avg_rating || '--'}</p><p className="text-xs text-gray-500">{t('Rating', 'ریٹنگ')}</p></div>
         </div>
 
+        {/* Upgrade to PRO Toggle */}
         {provider?.plan !== 'pro' && (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
             <div className="flex items-center justify-between">
-              <div><h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Crown className="w-5 h-5 text-yellow-500" />{t('Upgrade to PRO', 'پرو میں اپ گریڈ کریں')}</h3><p className="text-xs text-gray-500 mt-1">{t('Get unlimited bookings, priority matching & more', 'لامحدود بکنگ، ترجیحی میچنگ اور بہت کچھ حاصل کریں')}</p></div>
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Crown className="w-5 h-5 text-yellow-500" />{t('Upgrade to PRO', 'پرو میں اپ گریڈ کریں')}</h3>
+                <p className="text-xs text-gray-500 mt-1">{t('Unlock unlimited bookings, priority & more', 'لامحدود بکنگ، ترجیح اور مزید')}</p>
+              </div>
               <button onClick={() => setShowProPlan(!showProPlan)} className={`relative w-12 h-7 rounded-full transition-all duration-300 ${showProPlan ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'}`}><span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-300 ${showProPlan ? 'translate-x-5' : ''}`} /></button>
             </div>
             {showProPlan && (
-              <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/30 rounded-xl border border-purple-200 dark:border-purple-700">
-                <div className="text-center mb-3"><span className="text-3xl font-bold text-purple-600">PKR 1,000</span><span className="text-sm text-gray-500">/month</span></div>
-                <ul className="space-y-2 mb-4 text-sm text-gray-700 dark:text-gray-300">
-                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {t('Unlimited bookings', 'لامحدود بکنگ')}</li>
-                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {t('Priority matching', 'ترجیحی میچنگ')}</li>
-                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {t('Verified PRO badge', 'تصدیق شدہ پرو بیج')}</li>
-                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {t('Extended response time', 'توسیعی جوابی وقت')}</li>
-                  <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> {t('Earnings dashboard', 'آمدنی کا ڈیش بورڈ')}</li>
-                </ul>
-                <button className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all hover:shadow-lg active:scale-95">{t('Upgrade Now', 'ابھی اپ گریڈ کریں')}</button>
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('View full pricing details and upgrade', 'مکمل قیمت کی تفصیلات دیکھیں اور اپ گریڈ کریں')}</p>
+                <button onClick={() => navigate('/provider/pricing')} className="px-8 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all hover:shadow-lg active:scale-95">
+                  {t('View Pricing Plans', 'قیمت کے پلان دیکھیں')}
+                </button>
               </div>
             )}
           </div>
         )}
 
+        {/* Info Card */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white">{t('Information', 'معلومات')}</h3>
@@ -247,13 +247,15 @@ export default function ProviderProfile() {
           )}
         </div>
 
+        {/* Sign Out */}
         <div className="flex justify-center">
-  <button onClick={() => setShowSignout(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium hover:bg-red-500 hover:text-white transition-all duration-200">
-    <LogOut className="w-4 h-4" /> {t('Sign Out', 'سائن آؤٹ')}
-  </button>
-</div>
+          <button onClick={() => setShowSignout(true)} className="inline-flex items-center gap-2 px-6 py-2.5 bg-purple-100 text-purple-700 rounded-xl text-sm font-medium hover:bg-red-500 hover:text-white transition-all duration-200">
+            <LogOut className="w-4 h-4" /> {t('Sign Out', 'سائن آؤٹ')}
+          </button>
+        </div>
       </div>
 
+      {/* Sign Out Modal */}
       {showSignout && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">

@@ -28,7 +28,7 @@ import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminPlatform from './pages/admin/AdminPlatform';
 import ProviderList from './pages/customer/ProviderList';
 import ProviderDetail from './pages/customer/ProviderDetail';
-
+import ProviderPricing from './pages/provider/ProviderPricing'
 export default function App() {
   return (
     <Routes>
@@ -95,6 +95,11 @@ export default function App() {
         <Route path="/provider/waiting-approval" element={
           <ProtectedRoute allowedRoles={['provider']}><WaitingApproval /></ProtectedRoute>
         } />
+        <Route path="/provider/pricing" element={
+  <ProtectedRoute allowedRoles={['provider']}>
+    <ProviderPricing />
+  </ProtectedRoute>
+} />
 
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={
