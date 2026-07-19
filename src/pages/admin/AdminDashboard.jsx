@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Users, UserCheck, Clock, CheckCircle, LogOut, Home, Settings, User } from 'lucide-react'
+import { Users, UserCheck, Clock, CheckCircle, LogOut, Home, Settings, Crown } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -10,7 +10,7 @@ export default function AdminDashboard() {
   const location = useLocation()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ totalUsers: 0, pendingProviders: 0, totalCustomers: 0, totalRequests: 0 })
+  const [stats, setStats] = useState({ totalUsers: 0, pendingProviders: 0, totalCustomers: 0, totalRequests: 0, pendingProUpgrades: 0 })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [adminName, setAdminName] = useState('')
 
@@ -27,12 +27,14 @@ export default function AdminDashboard() {
         const { count: pendingProviders } = await supabase.from('providers').select('*', { count: 'exact', head: true }).eq('is_approved', false)
         const { count: totalCustomers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'customer')
         const { count: totalRequests } = await supabase.from('requests').select('*', { count: 'exact', head: true })
+        const { count: pendingProUpgrades } = await supabase.from('pro_upgrade_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
 
         setStats({
           totalUsers: totalUsers || 0,
           pendingProviders: pendingProviders || 0,
           totalCustomers: totalCustomers || 0,
           totalRequests: totalRequests || 0,
+          pendingProUpgrades: pendingProUpgrades || 0,
         })
       } catch (err) { console.error(err) }
       finally { setLoading(false) }
@@ -48,6 +50,7 @@ export default function AdminDashboard() {
   const sidebarLinks = [
     { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), path: '/admin/dashboard' },
     { icon: UserCheck, label: t('Approvals', 'منظوریاں'), path: '/admin/approvals' },
+    { icon: Crown, label: t('Pro Upgrades', 'پرو اپ گریڈ'), path: '/admin/pro-upgrades' },
     { icon: Settings, label: t('Platform', 'پلیٹ فارم'), path: '/admin/platform' },
   ]
 
@@ -66,7 +69,7 @@ export default function AdminDashboard() {
         </div>
         <nav className="p-3 space-y-1">
           {sidebarLinks.map((link, i) => {
-            const isActive = link.path !== '/admin/dashboard' && location.pathname === link.path
+            const isActive = location.pathname === link.path
             return (
               <button key={i} onClick={() => { if (!isActive) navigate(link.path) }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${isActive ? 'bg-purple-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-purple-600 hover:text-white'}`}>
                 <link.icon className="w-5 h-5 flex-shrink-0" />{sidebarOpen && <span>{link.label}</span>}
@@ -103,7 +106,7 @@ export default function AdminDashboard() {
         </header>
 
         <main className="p-4 lg:p-6">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
               <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center"><Users className="w-6 h-6 text-purple-600 dark:text-purple-400" /></div>
               <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers}</p><p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Users', 'کل صارفین')}</p></div>
@@ -119,6 +122,10 @@ export default function AdminDashboard() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center"><Settings className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /></div>
               <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalRequests}</p><p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Requests', 'کل درخواستیں')}</p></div>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-yellow-200 dark:border-yellow-800 p-5 flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center"><Crown className="w-6 h-6 text-yellow-600 dark:text-yellow-400" /></div>
+              <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pendingProUpgrades}</p><p className="text-xs text-gray-500 dark:text-gray-400">{t('Pro Upgrades', 'پرو اپ گریڈ')}</p></div>
             </div>
           </div>
         </main>

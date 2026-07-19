@@ -83,12 +83,20 @@ export default function ProviderChat() {
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4">
-        <div className="flex items-center gap-2">
-          <input type="text" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder={t('Type a message...', 'پیغام لکھیں...')} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500" />
-          <button onClick={handleSend} disabled={!text.trim() || sending} className="w-10 h-10 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl flex items-center justify-center transition-colors"><Send className="w-4 h-4" /></button>
-        </div>
+    <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+  {booking?.status !== 'confirmed' ? (
+    <div className="text-center py-4 text-sm text-gray-400 dark:text-gray-500">
+      {t('Chat is closed. Request is completed or cancelled.', 'چیٹ بند ہے۔ درخواست مکمل یا منسوخ ہو چکی ہے۔')}
+    </div>
+  ) : (
+    <div className="p-4">
+      <div className="flex items-center gap-2">
+        <input type="text" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} placeholder={t('Type a message...', 'پیغام لکھیں...')} className="flex-1 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-500" />
+        <button onClick={handleSend} disabled={!text.trim() || sending} className="w-10 h-10 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 text-white rounded-xl flex items-center justify-center transition-colors"><Send className="w-4 h-4" /></button>
       </div>
+    </div>
+  )}
+</div>
     </div>
   )
 }
