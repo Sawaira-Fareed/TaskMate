@@ -30,7 +30,8 @@ export function useChat(bookingId, currentUserId) {
     }
     setLoading(false)
   }
-const sendMessage = useCallback(async (text, receiverId, senderName) => {
+
+  const sendMessage = useCallback(async (text, receiverId) => {
     if (!text.trim() || !bookingId || !currentUserId) return
     setSending(true)
     const { data, error } = await supabase
@@ -48,13 +49,14 @@ const sendMessage = useCallback(async (text, receiverId, senderName) => {
     if (!error && data) {
       setMessages(prev => [...prev, data])
 
+      const { data: sender } = await supabase.from('users').select('full_name').eq('id', currentUserId).single()
       const { data: receiver } = await supabase.from('users').select('role').eq('id', receiverId).single()
       const chatPath = receiver?.role === 'provider' ? `/provider/chat/${bookingId}` : `/customer/chat/${bookingId}`
 
       await supabase.from('notifications').insert({
         user_id: receiverId,
         type: 'new_request',
-        title: senderName || 'Someone',
+        title: sender?.full_name || 'Someone',
         message: text.trim().substring(0, 60) + (text.length > 60 ? '...' : ''),
         action_url: chatPath
       })
@@ -62,6 +64,7 @@ const sendMessage = useCallback(async (text, receiverId, senderName) => {
     setSending(false)
     return data
   }, [bookingId, currentUserId])
+
   function getMessageStatus(msg) {
     if (msg.sender_id !== currentUserId) return null
     if (msg.read_at) return { icon: '✓✓', color: 'text-blue-500', label: 'Read' }

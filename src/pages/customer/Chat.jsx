@@ -36,7 +36,6 @@ export default function Chat() {
 
   const receiverId = booking?.provider?.user_id
   const providerName = booking?.provider?.user?.full_name || 'Provider'
-  const customerName = booking?.customer?.full_name || 'Customer'
 
   async function handleSend() {
     if (!text.trim()) return
@@ -60,7 +59,6 @@ export default function Chat() {
         </div>
       </header>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
           <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
@@ -91,7 +89,6 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Input */}
       <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-4">
         <div className="flex items-center gap-2">
           <input

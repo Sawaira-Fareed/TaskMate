@@ -23,7 +23,7 @@ export default function ProviderChat() {
 
       const { data: bkg } = await supabase
         .from('bookings')
-        .select('*, customer:customer_id(full_name), provider:provider_id(user_id)')
+        .select('*, customer:customer_id(full_name), provider:provider_id(user_id, user:user_id(full_name))')
         .eq('id', bookingId)
         .single()
       setBooking(bkg)
@@ -39,7 +39,7 @@ export default function ProviderChat() {
 
   async function handleSend() {
     if (!text.trim()) return
-    const result = await sendMessage(text, receiverId, providerName || 'Provider')
+    const result = await sendMessage(text, receiverId)
     if (result) setText('')
   }
 

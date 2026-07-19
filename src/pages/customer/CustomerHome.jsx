@@ -57,7 +57,7 @@ export default function CustomerHome() {
     setUnreadCount(count || 0)
   }
   fetchUnread()
-  const interval = setInterval(fetchUnread, 10000)
+  const interval = setInterval(fetchUnread, 3000)
   return () => clearInterval(interval)
 }, [])
 

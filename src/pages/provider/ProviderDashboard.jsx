@@ -17,6 +17,7 @@ export default function ProviderDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showSignout, setShowSignout] = useState(false)
   const [earnings, setEarnings] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
@@ -32,6 +33,22 @@ export default function ProviderDashboard() {
     }
     loadProvider()
   }, [])
+
+  useEffect(() => {
+  async function fetchUnread() {
+    const user = await getCurrentUser()
+    if (!user) return
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    setUnreadCount(count || 0)
+  }
+  fetchUnread()
+  const interval = setInterval(fetchUnread, 3000)
+  return () => clearInterval(interval)
+}, [])
 
   useEffect(() => {
     if (!provider?.id) return
@@ -108,6 +125,17 @@ export default function ProviderDashboard() {
               <button onClick={() => toggleLanguage('ur')} className={`px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${lang === 'ur' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>
             </div>
             <ThemeToggle />
+            <button
+  onClick={() => navigate('/provider/notifications')}
+  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+>
+  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+  {unreadCount > 0 && (
+    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+      {unreadCount > 9 ? '9+' : unreadCount}
+    </span>
+  )}
+</button>
             <button onClick={() => navigate('/provider/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 hover:shadow-md">
               <span className="text-purple-600 dark:text-purple-400 font-semibold text-xs">{initial}</span>
             </button>
