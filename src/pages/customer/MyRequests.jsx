@@ -16,20 +16,8 @@ export default function MyRequests() {
 
   useEffect(() => {
     loadRequests()
-
-    // Realtime subscription
-    const user = getCurrentUser()
-    if (!user) return
-    const channel = supabase
-      .channel('my-requests')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'requests' },
-        () => loadRequests()
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
+    const interval = setInterval(loadRequests, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   async function loadRequests() {
