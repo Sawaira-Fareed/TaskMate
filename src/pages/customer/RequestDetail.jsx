@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Clock, MapPin, DollarSign, Calendar, Play, Check, X, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { MessageCircle, Phone } from 'lucide-react'
 
 export default function RequestDetail() {
   const { id } = useParams()
@@ -11,6 +12,7 @@ export default function RequestDetail() {
   const [responses, setResponses] = useState([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [booking, setBooking] = useState(null)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
 
@@ -19,33 +21,69 @@ export default function RequestDetail() {
 
     // Subscribe to realtime updates on this request
     const channel = supabase
-      .channel(`request-${id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'requests', filter: `id=eq.${id}` },
-        (payload) => {
-          setRequest(payload.new)
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'provider_responses', filter: `request_id=eq.${id}` },
-        () => {
-          loadResponses()
-        }
-      )
-      .subscribe()
+  .channel(`request-${id}`)
+  .on(
+  'postgres_changes',
+  { event: 'UPDATE', schema: 'public', table: 'requests' },
+  async (payload) => {
+    if (payload.new.id === id) {
+      setRequest(payload.new)
+      // Fetch booking if status changed to confirmed
+      if (payload.new.status === 'confirmed' && !booking) {
+        const { data: bkg } = await supabase
+          .from('bookings')
+          .select('*, provider:provider_id(phone, plan, user:user_id(full_name))')
+          .eq('request_id', id)
+          .single()
+        if (bkg) setBooking(bkg)
+      }
+    }
+  }
+)
+  .on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'provider_responses' },
+    (payload) => {
+      if (payload.new.request_id === id) loadResponses()
+    }
+  )
+  .on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'bookings' },
+    (payload) => {
+      if (payload.new.request_id === id) setBooking(payload.new)
+    }
+  )
+  .on(
+    'postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'bookings' },
+    (payload) => {
+      if (payload.new.request_id === id) setBooking(payload.new)
+    }
+  )
+  .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [id])
 
-  async function loadRequest() {
-    const { data: req } = await supabase.from('requests').select('*').eq('id', id).single()
-    setRequest(req)
-    setLoading(false)
+async function loadRequest() {
+  const { data: req } = await supabase.from('requests').select('*').eq('id', id).single()
+  setRequest(req)
+  
+  // Fetch booking if exists
+  if (req?.status === 'confirmed' || req?.status === 'completed') {
+    const { data: bkg } = await supabase
+      .from('bookings')
+      .select('*, provider:provider_id(phone, plan, user:user_id(full_name))')
+      .eq('request_id', id)
+      .single()
+    setBooking(bkg)
   }
+  
+  setLoading(false)
+}
 
   async function loadResponses() {
     const { data: res } = await supabase.from('provider_responses').select('*, provider:provider_id(user:user_id(full_name))').eq('request_id', id).order('created_at', { ascending: true })
@@ -64,7 +102,7 @@ export default function RequestDetail() {
       status_before: request.status,
       status_after: 'cancelled'
     })
-    navigate('/customer/my-requests')
+    navigate('/customer/my-requests', { replace: true })
   } catch (err) {
     alert('Failed: ' + err.message)
   } finally {
@@ -74,23 +112,7 @@ export default function RequestDetail() {
 
 async function handleMarkDone() {
   if (!confirm(t('Mark this job as completed?', 'کیا یہ کام مکمل ہو گیا ہے؟'))) return
-  setActionLoading(true)
-  try {
-    await supabase.from('bookings').update({ status: 'completed' }).eq('request_id', id)
-    await supabase.from('requests').update({ status: 'completed' }).eq('id', id)
-    await supabase.from('audit_logs').insert({
-      request_id: id,
-      customer_id: request.customer_id,
-      event_type: 'booking_completed',
-      status_before: 'confirmed',
-      status_after: 'completed'
-    })
-    navigate('/customer/bookings')
-  } catch (err) {
-    alert('Failed: ' + err.message)
-  } finally {
-    setActionLoading(false)
-  }
+  navigate(`/customer/rate/${booking?.id}`, { replace: true })
 }
 
   async function handleCounterResponse(accepted) {
@@ -243,18 +265,49 @@ async function handleMarkDone() {
           </div>
         )}
 
-        {request.status === 'confirmed' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
-            <button
-              onClick={handleMarkDone}
-              disabled={actionLoading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
-            >
-              <Check className="w-4 h-4" />
-              {t('Mark as Done', 'مکمل کے طور پر نشان زد کریں')}
-            </button>
-          </div>
-        )}
+      {request.status === 'confirmed' && booking?.provider && (
+  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 space-y-3">
+
+    {/* In-App Chat Button */}
+<button
+  onClick={() => navigate(`/customer/chat/${booking.id}`)}
+  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+>
+  <MessageCircle className="w-4 h-4" />
+  {t('Chat in App', 'ایپ میں چیٹ کریں')}
+</button>
+    {/* WhatsApp Button */}
+    <a
+      href={`https://wa.me/${booking.provider.phone?.replace(/\D/g, '')}?text=${encodeURIComponent(`Assalam-o-Alaikum, I booked you through Zaria for ${request.service_type} on ${request.preferred_date}`)}`}
+      target="_blank"
+      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-green-500 hover:bg-green-600 text-white transition-colors"
+    >
+      <MessageCircle className="w-4 h-4" />
+      {t('Chat on WhatsApp', 'واٹس ایپ پر چیٹ کریں')}
+    </a>
+
+    {/* Call Button — Pro only */}
+    {booking.provider.plan === 'pro' && (
+      <a
+        href={`tel:${booking.provider.phone}`}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white transition-colors"
+      >
+        <Phone className="w-4 h-4" />
+        {t('Call Provider', 'پرووائیڈر کو کال کریں')}
+      </a>
+    )}
+
+    {/* Mark as Done */}
+    <button
+      onClick={handleMarkDone}
+      disabled={actionLoading}
+      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+    >
+      <Check className="w-4 h-4" />
+      {t('Mark as Done', 'مکمل کے طور پر نشان زد کریں')}
+    </button>
+  </div>
+)}
 
         {/* Pending Counter Offer */}
         {pendingCounter && (

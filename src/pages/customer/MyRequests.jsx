@@ -123,7 +123,7 @@ export default function MyRequests() {
           <div className="space-y-3">
             {filtered.map(req => (
               <div key={req.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all">
-                <button onClick={() => navigate(`/customer/request/${req.id}`)} className="w-full text-left">
+                <button onClick={() => navigate(`/customer/request/${req.id}`, { replace: true })} className="w-full text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{req.service_type || t('Service Request', 'سروس کی درخواست')}</span>
                     <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 ${statusBadge(req.status)}`}>

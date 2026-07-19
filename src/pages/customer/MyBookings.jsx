@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Star, Calendar } from 'lucide-react'
+import { ArrowLeft, Star, Calendar, Clock, User, Wrench, Plug, ShoppingBag, Monitor, CheckCircle, XCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
+
+const serviceColors = {
+  plumber: 'from-blue-400 to-cyan-300',
+  electrician: 'from-amber-400 to-orange-300',
+  grocery: 'from-emerald-400 to-teal-300',
+  computer_repair: 'from-fuchsia-400 to-pink-300',
+}
+
+const serviceIcons = { plumber: Wrench, electrician: Plug, grocery: ShoppingBag, computer_repair: Monitor }
 
 export default function MyBookings() {
   const navigate = useNavigate()
@@ -16,46 +25,77 @@ export default function MyBookings() {
 
   useEffect(() => {
     async function load() {
-      try {
-        const user = await getCurrentUser()
-        const { data, error } = await supabase
-          .from('bookings')
-          .select('*')
-          .eq('customer_id', user.id)
-          .order('created_at', { ascending: false })
-        if (error) throw error
-        setBookings(data || [])
-      } catch (err) {
-        console.error('Failed to load:', err.message)
-      } finally {
-        setLoading(false)
-      }
+  try {
+    const user = await getCurrentUser()
+    
+    // Fetch bookings
+    const { data: bookingsData } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('customer_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (!bookingsData?.length) {
+      setBookings([])
+      setLoading(false)
+      return
     }
+
+    // Fetch provider details separately
+    const providerIds = [...new Set(bookingsData.map(b => b.provider_id))]
+    const { data: providersData } = await supabase
+      .from('providers')
+      .select('id, avg_rating, user:user_id(full_name)')
+      .in('id', providerIds)
+
+    // Merge
+    const merged = bookingsData.map(b => ({
+      ...b,
+      provider: providersData?.find(p => p.id === b.provider_id) || null
+    }))
+
+    setBookings(merged)
+  } catch (err) {
+    console.error('Failed to load:', err.message)
+  } finally {
+    setLoading(false)
+  }
+}
     load()
   }, [])
 
-  const statusBadge = (s) => {
-    const styles = {
-      confirmed: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-      completed: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    }
-    return styles[s] || 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+  const statusBadge = (s) => ({
+    confirmed: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    completed: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    cancelled: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  }[s] || 'bg-gray-50 text-gray-600')
+
+  const statusIcon = (s) => {
+    if (s === 'completed') return <CheckCircle className="w-4 h-4 text-emerald-500" />
+    if (s === 'confirmed') return <Clock className="w-4 h-4 text-blue-500" />
+    return <XCircle className="w-4 h-4 text-red-500" />
   }
 
-const filtered = bookings.filter(b =>
-  activeTab === 'upcoming' ? ['confirmed'].includes(b.status) :
-  activeTab === 'completed' ? ['completed'].includes(b.status) :
-  ['cancelled'].includes(b.status)
-)
+  const filtered = bookings.filter(b =>
+    activeTab === 'upcoming' ? ['confirmed'].includes(b.status) :
+    activeTab === 'completed' ? ['completed'].includes(b.status) :
+    ['cancelled'].includes(b.status)
+  )
+
+  function formatTime(time) {
+    if (!time) return ''
+    const [h, m] = time.split(':')
+    const hour = parseInt(h)
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const h12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour)
+    return `${h12}:${m} ${ampm}`
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 h-16 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+          <button onClick={() => navigate('/customer/dashboard', { replace: true })} className="text-gray-500 dark:text-gray-400"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('My Bookings', 'میری بکنگز')}</h1>
         </div>
         <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/30 p-1 rounded-lg">
@@ -68,7 +108,7 @@ const filtered = bookings.filter(b =>
         <div className="flex gap-2 mb-4 bg-white dark:bg-gray-800 rounded-xl p-1 border border-gray-100 dark:border-gray-700">
           {['upcoming', 'completed', 'cancelled'].map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${activeTab === tab ? 'bg-purple-600 text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-              {t(tab.charAt(0).toUpperCase() + tab.slice(1), tab)}
+              {tab === 'upcoming' ? t('Upcoming', 'آنے والے') : tab === 'completed' ? t('Completed', 'مکمل') : t('Cancelled', 'منسوخ')}
             </button>
           ))}
         </div>
@@ -82,28 +122,61 @@ const filtered = bookings.filter(b =>
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map(b => (
-              <div key={b.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{b.service_type}</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(b.status)}`}>{b.status}</span>
+            {filtered.map(b => {
+              const service = b.service_type || 'plumber'
+              const gradient = serviceColors[service] || 'from-purple-500 to-pink-500'
+              const ServiceIcon = serviceIcons[service] || Wrench
+
+              return (
+                <div key={b.id} className="relative bg-[#f5f0ff] dark:bg-gray-800 rounded-2xl shadow-sm border border-purple-100/40 dark:border-gray-700 overflow-hidden">
+                  <div className="absolute top-0 right-0 w-[28%] h-full rounded-2xl overflow-hidden" style={{ clipPath: 'polygon(35% 0, 100% 0, 100% 100%, 0% 100%)' }}>
+                    <div className={`w-full h-full bg-gradient-to-br ${gradient} opacity-100 dark:opacity-70`} />
+                  </div>
+
+                  <div className="relative p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {statusIcon(b.status)}
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{service}</span>
+                      </div>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusBadge(b.status)}`}>{b.status}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                      <Calendar className="w-3.5 h-3.5" /> {b.scheduled_date} • {formatTime(b.scheduled_time)}
+                    </div>
+
+                    {b.provider?.user?.full_name && (
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <User className="w-3.5 h-3.5" /> {b.provider.user.full_name}
+                        {b.provider.avg_rating && (
+                          <span className="flex items-center gap-0.5 ml-1">
+                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> {b.provider.avg_rating}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {b.rating && (
+                      <div className="flex items-center gap-1 mb-2">
+                        <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                        <span className="text-xs text-amber-600 dark:text-amber-400">{b.rating}/5</span>
+                      </div>
+                    )}
+
+                    {b.provider_earnings && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">PKR {b.provider_earnings}</p>
+                    )}
+
+                    {b.status === 'completed' && !b.rating && (
+                      <button onClick={() => navigate(`/customer/rate/${b.id}`, { replace: true })} className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-medium hover:text-purple-700">
+                        <Star className="w-4 h-4" /> {t('Rate Provider', 'پرووائیڈر کو ریٹ کریں')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-  <Calendar className="w-3.5 h-3.5" /> {b.scheduled_date} • {b.scheduled_time}
-</div>
-{b.rating && (
-  <div className="flex items-center gap-1 mt-1">
-    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-    <span className="text-xs text-amber-600 dark:text-amber-400">{b.rating}/5</span>
-  </div>
-)}
-                {b.status === 'completed' && !b.rating && (
-                  <button onClick={() => navigate(`/customer/rate/${b.id}`)} className="flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-medium mt-3 hover:text-purple-700 dark:hover:text-purple-300">
-                    <Star className="w-4 h-4" /> {t('Rate Provider', 'پرووائیڈر کو ریٹ کریں')}
-                  </button>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>

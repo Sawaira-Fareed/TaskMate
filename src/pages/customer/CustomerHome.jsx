@@ -18,7 +18,7 @@ export default function CustomerHome() {
   const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showSignout, setShowSignout] = useState(false)
-
+  const [unreadCount, setUnreadCount] = useState(0)
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
 
@@ -44,6 +44,22 @@ export default function CustomerHome() {
     }
     loadData()
   }, [])
+
+  useEffect(() => {
+  async function fetchUnread() {
+    const user = await getCurrentUser()
+    if (!user) return
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+    setUnreadCount(count || 0)
+  }
+  fetchUnread()
+  const interval = setInterval(fetchUnread, 10000)
+  return () => clearInterval(interval)
+}, [])
 
   // Realtime subscriptions for live updates
   useEffect(() => {
@@ -82,15 +98,14 @@ export default function CustomerHome() {
     return styles[status] || 'bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
   }
 
-  const sidebarLinks = [
-    { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), path: '/customer/dashboard' },
-    { icon: Search, label: t('Providers', 'پرووائیڈرز'), path: '/customer/providers' },
-    { icon: ClipboardList, label: t('My Requests', 'میری درخواستیں'), path: '/customer/my-requests' },
-    { icon: Calendar, label: t('Bookings', 'بکنگز'), path: '/customer/bookings' },
-    { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/customer/notifications' },
-    { icon: User, label: t('Profile', 'پروفائل'), path: '/customer/profile' },
-    { icon: Search, label: t('Providers', 'پرووائیڈرز'), path: '/customer/providers' },
-  ]
+ const sidebarLinks = [
+  { icon: Home, label: t('Dashboard', 'ڈیش بورڈ'), path: '/customer/dashboard' },
+  { icon: Search, label: t('Providers', 'پرووائیڈرز'), path: '/customer/providers' },
+  { icon: ClipboardList, label: t('My Requests', 'میری درخواستیں'), path: '/customer/my-requests' },
+  { icon: Calendar, label: t('Bookings', 'بکنگز'), path: '/customer/bookings' },
+  { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/customer/notifications' },
+  { icon: User, label: t('Profile', 'پروفائل'), path: '/customer/profile' },
+]
 
   const displayName = userProfile?.full_name || user?.user_metadata?.full_name || 'User'
   const firstName = displayName.split(' ')[0]
@@ -122,7 +137,7 @@ export default function CustomerHome() {
               return (
                 <button
                   key={i}
-                  onClick={() => { if (!isActive) navigate(link.path) }}
+                  onClick={() => { if (!isActive) navigate(link.path, { replace: true }) }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${isActive ? 'bg-purple-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-purple-600 hover:text-white'}`}
                 >
                   <link.icon className="w-5 h-5 flex-shrink-0" />
@@ -157,6 +172,17 @@ export default function CustomerHome() {
         <button onClick={() => toggleLanguage('ur')} className={`px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${lang === 'ur' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>
       </div>
       <ThemeToggle />
+      <button
+  onClick={() => navigate('/customer/notifications')}
+  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+>
+  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+  {unreadCount > 0 && (
+    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+      {unreadCount > 9 ? '9+' : unreadCount}
+    </span>
+  )}
+</button>
       <button onClick={() => navigate('/customer/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
         <span className="text-purple-600 dark:text-purple-400 font-semibold text-xs">{initial}</span>
       </button>

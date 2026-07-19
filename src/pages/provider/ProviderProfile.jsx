@@ -178,7 +178,7 @@ export default function ProviderProfile() {
           <div className="flex items-center justify-center gap-2">
             <button onClick={triggerCamera} disabled={uploading} className="w-9 h-9 bg-purple-600 text-white rounded-full flex items-center justify-center hover:bg-purple-700 transition-all shadow-md"><Camera className="w-4 h-4" /></button>
             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-9 h-9 bg-gray-500 text-white rounded-full flex items-center justify-center hover:bg-gray-600 transition-all shadow-md"><Upload className="w-4 h-4" /></button>
-            {profile?.avatar_url && <button onClick={handleRemoveAvatar} className="w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md"><Remove className="w-4 h-4" /></button>}
+           {profile?.avatar_url && <button onClick={handleRemoveAvatar} className="w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md"><X className="w-4 h-4" /></button>}
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleAvatarUpload(e.target.files?.[0])} />
           </div>
           {uploading && <p className="text-xs text-purple-600 mt-2">Uploading...</p>}

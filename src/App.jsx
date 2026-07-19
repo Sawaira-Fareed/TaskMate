@@ -29,6 +29,8 @@ import AdminPlatform from './pages/admin/AdminPlatform';
 import ProviderList from './pages/customer/ProviderList';
 import ProviderDetail from './pages/customer/ProviderDetail';
 import ProviderPricing from './pages/provider/ProviderPricing'
+import Chat from './pages/customer/Chat'
+import ProviderChat from './pages/provider/Chat'
 export default function App() {
   return (
     <Routes>
@@ -92,6 +94,16 @@ export default function App() {
         <Route path="/provider/profile" element={
           <ProtectedRoute allowedRoles={['provider']}><ProviderProfile /></ProtectedRoute>
         } />
+        // Customer chat
+<Route path="/customer/chat/:bookingId" element={
+  <ProtectedRoute allowedRoles={['customer']}><Chat /></ProtectedRoute>
+} />
+
+// Provider chat
+<Route path="/provider/chat/:bookingId" element={
+  <ProtectedRoute allowedRoles={['provider']}><ProviderChat /></ProtectedRoute>
+} />
+
         <Route path="/provider/waiting-approval" element={
           <ProtectedRoute allowedRoles={['provider']}><WaitingApproval /></ProtectedRoute>
         } />
