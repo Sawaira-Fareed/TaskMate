@@ -31,6 +31,8 @@ import ProviderDetail from './pages/customer/ProviderDetail';
 import ProviderPricing from './pages/provider/ProviderPricing'
 import Chat from './pages/customer/Chat'
 import ProviderChat from './pages/provider/Chat'
+import AdminProUpgrades from './pages/admin/AdminProUpgrades'
+
 export default function App() {
   return (
     <Routes>
@@ -124,6 +126,9 @@ export default function App() {
           <ProtectedRoute allowedRoles={['admin']}><AdminPlatform /></ProtectedRoute>
         } />
       </Route>
+      <Route path="/admin/pro-upgrades" element={
+  <ProtectedRoute allowedRoles={['admin']}><AdminProUpgrades /></ProtectedRoute>
+} />
 
       {/* Catch-all */}
       <Route path="*" element={<Landing />} />

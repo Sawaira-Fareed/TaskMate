@@ -21,19 +21,9 @@ export async function matchProviders(parsedIntent, customerId) {
   const { data: providers, error } = await supabase
     .from('providers')
     .select(`
-      id,
-      user_id,
-      tier,
-      avg_rating,
-      service_types,
-      user:user_id (
-        full_name,
-        phone,
-        latitude,
-        longitude,
-        city
-      )
-    `)
+  id, user_id, tier, avg_rating, service_types, plan,
+  user:user_id (full_name, phone, latitude, longitude, city)
+`)
     .eq('is_approved', true)
     .eq('is_online', true)
     .contains('service_types', [service_type])
@@ -62,12 +52,17 @@ export async function matchProviders(parsedIntent, customerId) {
     }
   })
 
-  // Sort: highest tier first, then nearest
-  scored.sort((a, b) => {
-    if (b.tier_score !== a.tier_score) return b.tier_score - a.tier_score
-    return a.distance_km - b.distance_km
-  })
-
+ // Sort: Pro first, then highest tier, then nearest
+scored.sort((a, b) => {
+  // Pro plan first
+  const aPro = a.plan === 'pro' ? 1 : 0
+  const bPro = b.plan === 'pro' ? 1 : 0
+  if (bPro !== aPro) return bPro - aPro
+  // Then tier
+  if (b.tier_score !== a.tier_score) return b.tier_score - a.tier_score
+  // Then distance
+  return a.distance_km - b.distance_km
+})
   return scored
 }
 
