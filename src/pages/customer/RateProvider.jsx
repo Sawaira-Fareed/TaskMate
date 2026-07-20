@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Star, Send, CheckCircle, DollarSign } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function RateProvider() {
   const { bookingId } = useParams()
-  const [searchParams] = useSearchParams()
-  const requestId = searchParams.get('bookingId') || bookingId
   const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [rating, setRating] = useState(0)
@@ -26,41 +24,78 @@ export default function RateProvider() {
     setLoading(true)
     setError('')
     try {
-      // Check if already rated
-      const { data: existing } = await supabase.from('bookings').select('rating').eq('id', requestId).single()
-      if (existing?.rating) { setAlreadyRated(true); setTimeout(() => navigate('/customer/dashboard', { replace: true }), 1500); return }
-
-      const { data: booking, error: bookingError } = await supabase
+      // Find booking by ID
+      const { data: booking, error: bookingErr } = await supabase
         .from('bookings')
-        .update({ rating, rated_at: new Date(), status: 'completed', provider_earnings: parseInt(price) })
-        .eq('id', requestId)
-        .select('provider_id, customer_id, service_type')
+        .select('id, request_id, provider_id, customer_id, rating')
+        .eq('id', bookingId)
         .single()
-      if (bookingError) throw bookingError
 
-      await supabase.from('requests').update({ status: 'completed' }).eq('id', requestId)
-      await supabase.from('provider_feedback').insert({
-        booking_id: requestId, customer_id: booking.customer_id, provider_id: booking.provider_id,
-        rating, review_text: review || null, is_public: true,
-      })
+      if (bookingErr || !booking) throw new Error('Booking not found')
 
-      const { data: allRatings } = await supabase.from('provider_feedback').select('rating').eq('provider_id', booking.provider_id)
-      if (allRatings?.length > 0) {
-        const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
-        await supabase.from('providers').update({ avg_rating: Math.round(avg * 100) / 100, total_jobs: allRatings.length }).eq('id', booking.provider_id)
+      // Check if already rated
+      if (booking.rating) {
+        setAlreadyRated(true)
+        setTimeout(() => navigate('/customer/my-requests', { replace: true }), 1500)
+        return
       }
 
-      await supabase.from('audit_logs').insert({ request_id: requestId, customer_id: booking.customer_id, provider_id: booking.provider_id, event_type: 'booking_completed', status_before: 'confirmed', status_after: 'completed' })
+      // Update booking to completed
+      await supabase
+        .from('bookings')
+        .update({ rating, rated_at: new Date(), status: 'completed', provider_earnings: parseInt(price) })
+        .eq('id', booking.id)
 
-      navigate('/customer/dashboard', { replace: true })
-    } catch (err) { alert('Failed: ' + err.message) }
-    finally { setLoading(false) }
+      // Update linked request to completed
+      if (booking.request_id) {
+        await supabase.from('requests').update({ status: 'completed' }).eq('id', booking.request_id)
+      }
+
+      // Save feedback
+      await supabase.from('provider_feedback').insert({
+        booking_id: booking.id,
+        customer_id: booking.customer_id,
+        provider_id: booking.provider_id,
+        rating,
+        review_text: review || null,
+        is_public: true,
+      })
+
+      // Update provider average rating
+      const { data: allRatings } = await supabase
+        .from('provider_feedback')
+        .select('rating')
+        .eq('provider_id', booking.provider_id)
+      if (allRatings?.length > 0) {
+        const avg = allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
+        await supabase
+          .from('providers')
+          .update({ avg_rating: Math.round(avg * 100) / 100, total_jobs: allRatings.length })
+          .eq('id', booking.provider_id)
+      }
+
+      // Audit log
+      await supabase.from('audit_logs').insert({
+        request_id: booking.request_id,
+        customer_id: booking.customer_id,
+        provider_id: booking.provider_id,
+        event_type: 'booking_completed',
+        status_before: 'confirmed',
+        status_after: 'completed'
+      })
+
+      navigate('/customer/my-requests', { replace: true })
+    } catch (err) {
+      alert('Failed: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (alreadyRated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center max-w-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center max-w-sm shadow-xl">
           <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
           <p className="text-lg font-semibold text-gray-900 dark:text-white">{t('Already Rated!', 'پہلے ہی ریٹ کر دیا ہے!')}</p>
         </div>
@@ -77,7 +112,6 @@ export default function RateProvider() {
 
           {error && <div className="bg-red-50 text-red-600 text-xs rounded-xl px-3 py-2 mb-4">{error}</div>}
 
-          {/* Stars */}
           <div className="flex justify-center gap-1 mb-4">
             {[1, 2, 3, 4, 5].map(i => (
               <button key={i} onClick={() => setRating(i)} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(0)} className="transition-transform hover:scale-110">
@@ -86,7 +120,6 @@ export default function RateProvider() {
             ))}
           </div>
 
-          {/* Price Paid */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 text-left">
               <DollarSign className="w-3.5 h-3.5 inline mr-1" />{t('Amount Paid (PKR)', 'ادا کی گئی رقم (روپے)')} *
@@ -95,7 +128,6 @@ export default function RateProvider() {
               className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none" />
           </div>
 
-          {/* Review */}
           <textarea rows={2} value={review} onChange={(e) => setReview(e.target.value)} placeholder={t('Write a review (optional)', 'جائزہ لکھیں (اختیاری)')}
             className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none mb-4 placeholder-gray-400" />
 

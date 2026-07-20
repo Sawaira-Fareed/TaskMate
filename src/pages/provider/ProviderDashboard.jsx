@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Clock, CheckCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Bell, User, TrendingUp, Zap } from 'lucide-react'
+import { Clock, CheckCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Bell, User, TrendingUp, Zap, Wrench, Plug, ShoppingBag, Monitor } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useRealtimeRequests } from '@/hooks/useRealtimeRequests'
+
+const serviceIcons = { plumber: Wrench, electrician: Plug, grocery: ShoppingBag, computer_repair: Monitor }
 
 export default function ProviderDashboard() {
   const navigate = useNavigate()
@@ -35,27 +37,23 @@ export default function ProviderDashboard() {
   }, [])
 
   useEffect(() => {
-  async function fetchUnread() {
-    const user = await getCurrentUser()
-    if (!user) return
-    const { count } = await supabase
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false)
-    setUnreadCount(count || 0)
-  }
-  fetchUnread()
-  const interval = setInterval(fetchUnread, 3000)
-  return () => clearInterval(interval)
-}, [])
+    async function fetchUnread() {
+      const user = await getCurrentUser()
+      if (!user) return
+      const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false)
+      setUnreadCount(count || 0)
+    }
+    fetchUnread()
+    const interval = setInterval(fetchUnread, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (!provider?.id) return
     async function loadJobs() {
       const { data: bookings } = await supabase.from('bookings').select('*').eq('provider_id', provider.id).order('created_at', { ascending: false }).limit(20)
       setMyJobs(bookings || [])
-      const total = (bookings || []).filter(b => b.status === 'completed').reduce((sum, b) => sum + (b.amount_paid || 0), 0)
+      const total = (bookings || []).filter(b => b.status === 'completed').reduce((sum, b) => sum + (b.provider_earnings || 0), 0)
       setEarnings(total)
     }
     loadJobs()
@@ -79,6 +77,8 @@ export default function ProviderDashboard() {
     { icon: User, label: t('Profile', 'پروفائل'), path: '/provider/profile' },
   ]
 
+  const confirmedJobs = myJobs.filter(j => j.status === 'confirmed')
+
   if (loading) return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
       <div className="w-10 h-10 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -86,7 +86,7 @@ export default function ProviderDashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex page-enter" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       {/* Desktop Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-40 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} hidden lg:block`}>
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-100 dark:border-gray-800">
@@ -125,113 +125,137 @@ export default function ProviderDashboard() {
               <button onClick={() => toggleLanguage('ur')} className={`px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${lang === 'ur' ? 'bg-purple-600 text-white shadow-sm' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>
             </div>
             <ThemeToggle />
-            <button
-  onClick={() => navigate('/provider/notifications')}
-  className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
->
-  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-  {unreadCount > 0 && (
-    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
-      {unreadCount > 9 ? '9+' : unreadCount}
-    </span>
-  )}
-</button>
-            <button onClick={() => navigate('/provider/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 hover:shadow-md">
+            <button onClick={() => navigate('/provider/notifications')} className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <button onClick={() => navigate('/provider/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
               <span className="text-purple-600 dark:text-purple-400 font-semibold text-xs">{initial}</span>
             </button>
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6 space-y-5 max-w-4xl mx-auto w-full">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200">
-              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-2">
-                <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{incomingRequests.length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('New Requests', 'نئی درخواستیں')}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200">
-              <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mb-2">
-                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{myJobs.filter(j => j.status === 'completed').length}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Completed', 'مکمل')}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200">
-              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center mb-2">
-                <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <p className="text-lg font-bold text-gray-900 dark:text-white">PKR {earnings.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Earnings', 'آمدنی')}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 hover:shadow-md transition-all duration-200">
-              <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center mb-2">
-                <Star className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-              </div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{provider?.avg_rating || '--'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Rating', 'ریٹنگ')}</p>
-            </div>
-          </div>
-          
-          {/* Upgrade Line */}
-          {!isPro && (
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-              {t('Want unlimited access?', 'لامحدود رسائی چاہیے؟')}{' '}
-              <button onClick={() => navigate('/provider/profile')} className="text-purple-600 dark:text-purple-400 font-medium hover:underline">
-                {t('Upgrade to PRO from your profile', 'اپنے پروفائل سے پرو میں اپ گریڈ کریں')}
+<main className="flex-1 p-4 lg:p-6 space-y-5 max-w-5xl mx-auto w-full">
+  {/* TOP SECTION: Incoming Requests + Stats */}
+  <div className="flex flex-col lg:flex-row gap-4">
+    {/* Incoming Requests — Purple Card */}
+    <div className="w-full lg:w-[60%] bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl shadow-lg shadow-purple-500/20 p-5">
+      <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+        <Clock className="w-5 h-5" /> {t('Incoming Requests', 'آنے والی درخواستیں')}
+      </h3>
+      {incomingRequests.length === 0 ? (
+        <div className="text-center py-8">
+          <Clock className="w-10 h-10 text-white/30 mx-auto mb-2" />
+          <p className="text-sm text-white/60">{t('No new requests', 'کوئی نئی درخواست نہیں')}</p>
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {incomingRequests.slice(0, 6).map(req => {
+            const Icon = serviceIcons[req.service_type] || Wrench
+            return (
+              <button key={req.id} onClick={() => navigate(`/provider/request/${req.id}`)} className="w-full flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left group shadow-sm">
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{req.service_type}</p>
+                  <p className="text-xs text-gray-500">{req.preferred_date} • {req.preferred_time}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors flex-shrink-0" />
               </button>
-            </p>
-          )}
+            )
+          })}
+        </div>
+      )}
+    </div>
 
+    {/* Stats — 4 small cards */}
+    <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 w-full lg:w-[40%]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+          <Star className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{provider?.avg_rating || '--'}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Rating', 'ریٹنگ')}</p>
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+          <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <div>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{provider?.total_jobs || 0}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Jobs Done', 'مکمل کام')}</p>
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+          <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">PKR {earnings.toLocaleString()}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Earnings', 'آمدنی')}</p>
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+          <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+        </div>
+        <div>
+          <p className="text-lg font-bold text-gray-900 dark:text-white capitalize">{provider?.tier || 'bronze'}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Tier', 'درجہ')} {isPro && '⭐'}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+  {/* UPGRADE PROMPT */}
+  {!isPro && (
+    <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+      {t('Want unlimited access?', 'لامحدود رسائی چاہیے؟')}{' '}
+      <button onClick={() => navigate('/provider/profile')} className="text-purple-600 dark:text-purple-400 font-medium hover:underline">
+        {t('Upgrade to PRO from your profile', 'اپنے پروفائل سے پرو میں اپ گریڈ کریں')}
+      </button>
+    </p>
+  )}
+
+  {/* BOTTOM: Confirmed Jobs */}
+  <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl shadow-lg shadow-purple-500/20 p-5">
+    <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+      <CheckCircle className="w-5 h-5" /> {t('Confirmed Jobs', 'تصدیق شدہ کام')}
+    </h3>
+    {confirmedJobs.length === 0 ? (
+      <div className="text-center py-8">
+        <CheckCircle className="w-10 h-10 text-white/30 mx-auto mb-2" />
+        <p className="text-sm text-white/60">{t('No confirmed jobs', 'کوئی تصدیق شدہ کام نہیں')}</p>
+      </div>
+    ) : (
+      <div className="space-y-2">
+        {confirmedJobs.slice(0, 5).map(job => {
+          const Icon = serviceIcons[job.service_type] || Wrench
+          return (
+            <button key={job.id} onClick={() => navigate(`/provider/chat/${job.id}`)} className="w-full flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left group shadow-sm">
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Icon className="w-5 h-5 text-purple-600" />
               </div>
-              <div>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{provider?.total_jobs || 0}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Jobs', 'کل کام')}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{job.service_type}</p>
+               <p className="text-xs text-gray-500">{job.scheduled_date} • {(() => { if (!job.scheduled_time) return ''; const [h, m] = job.scheduled_time.split(':'); const hour = parseInt(h); const ampm = hour >= 12 ? 'PM' : 'AM'; const h12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour); return `${h12}:${m} ${ampm}` })()}</p>
               </div>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
-                <Zap className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              </div>
-              <div>
-                <p className="text-lg font-bold text-gray-900 dark:text-white capitalize">{provider?.tier || 'bronze'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Tier', 'درجہ')}</p>
-              </div>
-            </div>
-          </div>
-          {/* Incoming Requests */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div className="p-5 pb-3">
-              <h3 className="font-semibold text-gray-900 dark:text-white">{t('Incoming Requests', 'آنے والی درخواستیں')}</h3>
-            </div>
-            {incomingRequests.length === 0 ? (
-              <div className="text-center py-10 px-5">
-                <Clock className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">{t('No new requests', 'کوئی نئی درخواست نہیں')}</p>
-              </div>
-            ) : (
-              <div className="px-5 pb-4 space-y-2">
-                {incomingRequests.map(req => (
-                  <button key={req.id} onClick={() => navigate(`/provider/request/${req.id}`)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 text-left group">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{req.service_type}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{req.preferred_date} • {req.preferred_time}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-500 transition-colors" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </main>
+              <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full font-medium flex-shrink-0">{t('Confirmed', 'تصدیق شدہ')}</span>
+              <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors flex-shrink-0" />
+            </button>
+          )
+        })}
+      </div>
+    )}
+  </div>
+</main>
       </div>
 
       {/* Sign Out Modal */}

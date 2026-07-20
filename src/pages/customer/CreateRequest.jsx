@@ -17,6 +17,10 @@ export default function CreateRequest() {
   const [error, setError] = useState('')
   const [validationError, setValidationError] = useState('')
 
+  // for location
+  const [gettingLocation, setGettingLocation] = useState(false)
+const [coordinates, setCoordinates] = useState(null)
+
   const [priority, setPriority] = useState('')
   const [serviceType, setServiceType] = useState('')
   const [date, setDate] = useState('')
@@ -77,6 +81,39 @@ export default function CreateRequest() {
     setVoiceBlob(null)
   }
 
+  const getCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    alert(t('Geolocation not supported', 'جیو لوکیشن سپورٹ نہیں ہے'))
+    return
+  }
+  setGettingLocation(true)
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords
+      setCoordinates({ lat: latitude, lng: longitude })
+      setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`)
+      setGettingLocation(false)
+    },
+    (err) => {
+      alert(t('Could not get location. Please type manually.', 'مقام حاصل نہیں ہو سکا۔ براہ کرم خود لکھیں۔'))
+      setGettingLocation(false)
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  )
+}
+
+const shareLocationLink = () => {
+  if (!coordinates) return
+  const { lat, lng } = coordinates
+  const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`
+  if (navigator.share) {
+    navigator.share({ title: 'My Location', text: 'Here is my location', url: mapUrl }).catch(() => {})
+  } else {
+    navigator.clipboard.writeText(mapUrl)
+    alert(t('Location link copied!', 'مقام کا لنک کاپی ہو گیا!'))
+  }
+}
+
   const canProceed = () => {
     if (step === 1) return priority !== ''
     if (step === 2) return serviceType !== ''
@@ -132,7 +169,13 @@ export default function CreateRequest() {
         city: 'Jand',
         language: parsedIntent.language || 'urdu',
         status: 'pending',
-        parsed_intent: { ...parsedIntent, location, voice_note_url: voiceNoteUrl, description },
+        parsed_intent: {
+  ...parsedIntent,
+  location: location,                              // text address
+  coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : null,  // GPS
+  voice_note_url: voiceNoteUrl,
+  description
+},
         expires_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString()
       }).select().single()
 
@@ -255,9 +298,46 @@ export default function CreateRequest() {
                   />
                   
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"><MapPin className="w-3.5 h-3.5 inline mr-1" />{t('Location', 'مقام')}</label>
-                    <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder={t('Your complete address', 'آپ کا مکمل پتہ')} className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-900 outline-none" />
-                  </div>
+  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"><MapPin className="w-3.5 h-3.5 inline mr-1" />{t('Location', 'مقام')} *</label>
+  
+  {/* Text location - mandatory */}
+  <input
+    type="text"
+    value={location}
+    onChange={(e) => setLocation(e.target.value)}
+    placeholder={t('Enter address or landmark', 'پتہ یا نشانی لکھیں')}
+    className="w-full border border-gray-200 dark:border-gray-600 rounded-xl px-3.5 py-2.5 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-100 dark:focus:ring-purple-900 outline-none"
+  />
+  
+  {/* GPS coordinates - optional */}
+  <div className="mt-2">
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={getCurrentLocation}
+        disabled={gettingLocation}
+        className="flex items-center gap-1 px-3 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl text-xs font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+      >
+        <MapPin className="w-3.5 h-3.5" />
+        {gettingLocation ? t('Getting location...', 'مقام حاصل ہو رہا ہے...') : t('Share Current Location', 'موجودہ مقام شیئر کریں')}
+      </button>
+      {coordinates && (
+        <button
+          type="button"
+          onClick={shareLocationLink}
+          className="flex items-center gap-1 px-3 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors"
+        >
+          {t('Share Link', 'لنک شیئر کریں')}
+        </button>
+      )}
+    </div>
+    {coordinates && (
+      <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+        <MapPin className="w-3 h-3" /> {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+      </p>
+    )}
+  </div>
+</div>
 
                   <button onClick={() => { if (description.trim() || voiceBlob) { setDetailStep(2); setValidationError('') } else setValidationError(t('Description or voice note is required', 'تفصیل یا وائس نوٹ درکار ہے')) }} className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-medium transition-all">
                     {t('Continue', 'جاری رکھیں')}
