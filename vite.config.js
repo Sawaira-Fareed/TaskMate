@@ -11,8 +11,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
-      },
+  maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+  globPatterns: ['**/*.{js,css,html,ico}'],
+},
       manifest: {
         name: 'Zaria - Your Medium to Everything',
         short_name: 'Zaria',
