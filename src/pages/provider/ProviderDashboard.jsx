@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Clock, CheckCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Bell, User, TrendingUp, Zap, Wrench, Plug, ShoppingBag, Monitor } from 'lucide-react'
+import { Clock, CheckCircle, DollarSign, Star, ChevronRight, LogOut, Home, ClipboardList, Bell, User, TrendingUp, Zap, Wrench, Plug, ShoppingBag, Monitor, Car, Bike, Users} from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useRealtimeRequests } from '@/hooks/useRealtimeRequests'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+
 
 const serviceIcons = { plumber: Wrench, electrician: Plug, grocery: ShoppingBag, computer_repair: Monitor }
 
@@ -20,6 +22,7 @@ export default function ProviderDashboard() {
   const [showSignout, setShowSignout] = useState(false)
   const [earnings, setEarnings] = useState(0)
   const [unreadCount, setUnreadCount] = useState(0)
+  const { subscribe, isSubscribed, isSupported } = usePushNotifications(user?.id)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
@@ -75,6 +78,7 @@ export default function ProviderDashboard() {
     { icon: ClipboardList, label: t('My Jobs', 'میرے کام'), path: '/provider/jobs' },
     { icon: Bell, label: t('Notifications', 'اطلاعات'), path: '/provider/notifications' },
     { icon: User, label: t('Profile', 'پروفائل'), path: '/provider/profile' },
+    { icon: Car, label: t('Ride Requests', 'سواریاں'), path: '/provider/ride-requests' },
   ]
 
   const confirmedJobs = myJobs.filter(j => j.status === 'confirmed')
@@ -133,6 +137,11 @@ export default function ProviderDashboard() {
                 </span>
               )}
             </button>
+            {isSupported && !isSubscribed && (
+  <button onClick={subscribe} className="text-xs text-purple-600 dark:text-purple-400 font-medium hover:underline px-2">
+    {t('Enable Alerts', 'الرٹس فعال کریں')}
+  </button>
+)}
             <button onClick={() => navigate('/provider/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
               <span className="text-purple-600 dark:text-purple-400 font-semibold text-xs">{initial}</span>
             </button>
@@ -155,15 +164,28 @@ export default function ProviderDashboard() {
       ) : (
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
           {incomingRequests.slice(0, 6).map(req => {
-            const Icon = serviceIcons[req.service_type] || Wrench
+            const isRide = req.is_ride
+            const Icon = isRide
+              ? (req.vehicle_type === 'bike' ? Bike : req.vehicle_type === 'rickshaw' ? Users : Car)
+              : serviceIcons[req.service_type] || Wrench
             return (
-              <button key={req.id} onClick={() => navigate(`/provider/request/${req.id}`)} className="w-full flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left group shadow-sm">
+              <button
+                key={req.id}
+                onClick={() => navigate(isRide ? `/provider/ride-requests` : `/provider/request/${req.id}`)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left group shadow-sm"
+              >
                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
                   <Icon className="w-5 h-5 text-purple-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">{req.service_type}</p>
-                  <p className="text-xs text-gray-500">{req.preferred_date} • {req.preferred_time}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white capitalize">
+                    {isRide ? `${req.vehicle_type || ''} Ride` : req.service_type}
+                  </p>
+                  {isRide ? (
+                    <p className="text-xs text-gray-500 truncate">{req.pickup_location} → {req.dropoff_location}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">{req.preferred_date} • {req.preferred_time}</p>
+                  )}
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors flex-shrink-0" />
               </button>

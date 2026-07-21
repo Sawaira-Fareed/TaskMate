@@ -5,12 +5,17 @@ import { Camera, Upload, ArrowLeft, ArrowRight, Check, X, Eye, EyeOff, Award } f
 
 const STEPS = ['Account', 'Personal', 'CNIC', 'Services', 'Certificate', 'Review'];
 
+
+
+
 export default function Register() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+    const [vehicleType, setVehicleType] = useState('');
+  
 
   const [formData, setFormData] = useState({
     email: '', password: '', confirmPassword: '', role: 'customer',
@@ -149,6 +154,7 @@ export default function Register() {
   experience: formData.experience || null,
   bio: formData.bio || null,
   certificate_url: certificateUrl || null,
+  vehicle_type: formData.selectedService === 'ride' ? vehicleType : null,
 });
         if (providerError) throw providerError;
         navigate('/provider/waiting-approval');
@@ -172,13 +178,13 @@ async function checkEmail(email) {
 }
 
 
-  const SERVICES = [
+ const SERVICES = [
     { id: 'plumber', name: 'Plumber', icon: '🔧' },
     { id: 'electrician', name: 'Electrician', icon: '⚡' },
     { id: 'grocery', name: 'Grocery', icon: '🛒' },
     { id: 'computer_repair', name: 'Computer Repair', icon: '💻' },
+    { id: 'ride', name: 'Ride Provider', icon: '🛺' },
   ];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       <div className="bg-white dark:bg-gray-900 shadow-sm p-4 border-b border-gray-200 dark:border-gray-800">
@@ -264,21 +270,53 @@ async function checkEmail(email) {
           </div>
         )}
 
-        {/* STEP 3: Services */}
-        {currentStep === 3 && formData.role === 'provider' && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Select Your Service</h2>
-            <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">⚠️ Limit: 1 service per provider account</p>
-            <div className="grid grid-cols-2 gap-3">
-              {SERVICES.map(service => (
-                <button key={service.id} type="button" onClick={() => { setFormData(prev => ({ ...prev, selectedService: service.id })); setErrors(prev => ({ ...prev, selectedService: undefined })); }} className={`p-4 rounded-xl border-2 text-center transition-all ${formData.selectedService === service.id ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}>
-                  <div className="text-2xl mb-1">{service.icon}</div><div className="font-medium text-sm text-gray-900 dark:text-white">{service.name}</div>
-                </button>
-              ))}
-            </div>
-            <div className="text-red-500 text-sm h-5">{errors.selectedService}</div>
-          </div>
-        )}
+       {/* STEP 3: Services */}
+{currentStep === 3 && formData.role === 'provider' && (
+  <div className="space-y-4">
+    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Select Your Service</h2>
+    <p className="text-amber-600 dark:text-amber-400 text-sm font-medium">⚠️ Limit: 1 service per provider account</p>
+    <div className="grid grid-cols-2 gap-3">
+      {SERVICES.map(service => (
+        <button key={service.id} type="button" onClick={() => { setFormData(prev => ({ ...prev, selectedService: service.id })); setErrors(prev => ({ ...prev, selectedService: undefined })); }} className={`p-4 rounded-xl border-2 text-center transition-all ${formData.selectedService === service.id ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}>
+          <div className="text-2xl mb-1">{service.icon}</div><div className="font-medium text-sm text-gray-900 dark:text-white">{service.name}</div>
+        </button>
+      ))}
+    </div>
+    <div className="text-red-500 text-sm h-5">{errors.selectedService}</div>
+    <button onClick={() => {
+      if (!formData.selectedService) { setErrors({ selectedService: 'Please select one service' }); return }
+      if (formData.selectedService === 'ride') setCurrentStep(3.5)
+      else setCurrentStep(4)
+    }} className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">
+      Continue
+    </button>
+  </div>
+)}
+
+{/* STEP 3.5: Vehicle Type (for ride providers only) */}
+{currentStep === 3.5 && (
+  <div className="space-y-4">
+    <button onClick={() => setCurrentStep(3)} className="flex items-center gap-2 text-gray-600"><ArrowLeft size={20} /> Back</button>
+    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Select Vehicle Type</h2>
+    <div className="grid grid-cols-3 gap-3">
+      {[
+        { id: 'bike', label: 'Bike', icon: '🏍️' },
+        { id: 'rickshaw', label: 'Rickshaw', icon: '🛺' },
+        { id: 'car', label: 'Car', icon: '🚗' },
+      ].map(v => (
+        <button key={v.id} type="button" onClick={() => setVehicleType(v.id)}
+          className={`p-4 rounded-xl border-2 text-center transition-all ${vehicleType === v.id ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-600' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}>
+          <div className="text-3xl mb-1">{v.icon}</div>
+          <div className="font-medium text-sm text-gray-900 dark:text-white">{v.label}</div>
+        </button>
+      ))}
+    </div>
+    <button onClick={() => setCurrentStep(4)} disabled={!vehicleType}
+      className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50">
+      Continue
+    </button>
+  </div>
+)}
 
         {/* STEP 4: Certificate */}
         {currentStep === 4 && formData.role === 'provider' && (

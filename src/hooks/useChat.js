@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-
+import { sendPushNotification } from '@/api/sendPushNotification'
 export function useChat(bookingId, currentUserId) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -60,6 +60,12 @@ export function useChat(bookingId, currentUserId) {
         message: text.trim().substring(0, 60) + (text.length > 60 ? '...' : ''),
         action_url: chatPath
       })
+      // Send push notification
+sendPushNotification(receiverId, {
+  title: sender?.full_name || 'Someone',
+  message: text.trim().substring(0, 60),
+  actionUrl: chatPath
+}).catch(() => {}) // fire and forget
     }
     setSending(false)
     return data

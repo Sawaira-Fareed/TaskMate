@@ -33,6 +33,11 @@ import Chat from './pages/customer/Chat'
 import ProviderChat from './pages/provider/Chat'
 import AdminProUpgrades from './pages/admin/AdminProUpgrades'
 
+import RideRequests from './pages/provider/RideRequests'
+
+import BookRide from './pages/customer/BookRide'
+
+
 export default function App() {
   return (
     <Routes>
@@ -106,6 +111,10 @@ export default function App() {
   <ProtectedRoute allowedRoles={['provider']}><ProviderChat /></ProtectedRoute>
 } />
 
+<Route path="/provider/ride-requests" element={
+  <ProtectedRoute allowedRoles={['provider']}><RideRequests /></ProtectedRoute>
+} />
+
         <Route path="/provider/waiting-approval" element={
           <ProtectedRoute allowedRoles={['provider']}><WaitingApproval /></ProtectedRoute>
         } />
@@ -113,6 +122,9 @@ export default function App() {
   <ProtectedRoute allowedRoles={['provider']}>
     <ProviderPricing />
   </ProtectedRoute>
+} />
+<Route path="/customer/book-ride" element={
+  <ProtectedRoute allowedRoles={['customer']}><BookRide /></ProtectedRoute>
 } />
 
         {/* Admin Routes */}

@@ -1,58 +1,45 @@
 import { supabase } from '@/lib/supabaseClient'
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
-
-/**
- * Sends a push notification to a provider via Web Push API
- * Provider must have push_subscription stored in providers table
- */
-export async function sendPushNotification(providerId, { title, message, requestId }) {
+export async function sendPushNotification(userId, { title, message, actionUrl }) {
   try {
-    // Get provider's push subscription
-    const { data: provider, error } = await supabase
-      .from('providers')
-      .select('push_subscription, user_id')
-      .eq('id', providerId)
+    if (!userId) return false
+
+    // Get user's push subscription
+    const { data: user } = await supabase
+      .from('users')
+      .select('push_subscription')
+      .eq('id', userId)
       .single()
 
-    if (error || !provider?.push_subscription) {
-      console.warn(`No push subscription for provider ${providerId}`)
-      return false
+    if (!user?.push_subscription) return false
+
+    // Also check providers table
+    const { data: provider } = await supabase
+      .from('providers')
+      .select('push_subscription')
+      .eq('user_id', userId)
+      .single()
+
+    const subscription = user.push_subscription || provider?.push_subscription
+    if (!subscription) return false
+
+    // If service worker is ready, show notification directly
+    if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+      const registration = await navigator.serviceWorker.ready
+      await registration.showNotification(title || 'Zaria', {
+        body: message || '',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        vibrate: [200, 100, 200],
+        data: { url: actionUrl || '/' },
+        requireInteraction: true,
+        tag: `zaria-${Date.now()}`
+      })
     }
-
-    const subscription = provider.push_subscription
-
-    // Send push via Web Push API
-    await fetch('/api/send-push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscription,
-        payload: {
-          title: title || 'Zaria - New Request',
-          message: message || 'You have a new service request',
-          data: {
-            requestId,
-            url: `/provider/request/${requestId}`
-          }
-        }
-      })
-    })
-
-    // Also save to notifications table as fallback
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: provider.user_id,
-        type: 'new_request',
-        title: title || 'New Request',
-        message: message || 'You have a new service request',
-        action_url: `/provider/request/${requestId}`
-      })
 
     return true
   } catch (err) {
-    console.error('Push notification failed:', err.message)
+    console.error('Push notification failed:', err)
     return false
   }
 }

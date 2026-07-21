@@ -7,12 +7,11 @@ export function useRealtimeRequests(userId) {
   const [error, setError] = useState(null)
   const [providerId, setProviderId] = useState(null)
 
-  // Step 1: Get provider ID
   useEffect(() => {
     async function getProvider() {
       const { data } = await supabase
         .from('providers')
-        .select('id, service_types')
+        .select('id, service_types, vehicle_type')
         .eq('user_id', userId)
         .single()
 
@@ -21,10 +20,8 @@ export function useRealtimeRequests(userId) {
     if (userId) getProvider()
   }, [userId])
 
-  // Step 2: Initial fetch + Set up realtime subscription
   useEffect(() => {
     if (!providerId) return
-
     fetchRequests()
 
     const channel = supabase
@@ -34,12 +31,10 @@ export function useRealtimeRequests(userId) {
         { event: 'INSERT', schema: 'public', table: 'requests' },
         (payload) => {
           const newRequest = payload.new
-          if (
-            providerId.service_types.includes(newRequest.service_type) &&
-            newRequest.city === 'Jand' &&
-            ['pending', 'parsed', 'contacting'].includes(newRequest.status)
-          ) {
-            setRequests(prev => [newRequest, ...prev])
+          if (newRequest.city === 'Jand' && ['pending', 'parsed', 'contacting'].includes(newRequest.status)) {
+            if (isMatchingRequest(newRequest)) {
+              setRequests(prev => [newRequest, ...prev])
+            }
           }
         }
       )
@@ -47,9 +42,7 @@ export function useRealtimeRequests(userId) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'requests' },
         (payload) => {
-          setRequests(prev =>
-            prev.map(r => r.id === payload.new.id ? payload.new : r)
-          )
+          setRequests(prev => prev.map(r => r.id === payload.new.id ? payload.new : r))
         }
       )
       .subscribe((status) => {
@@ -57,48 +50,85 @@ export function useRealtimeRequests(userId) {
           console.log('Realtime connected')
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           console.warn('Realtime disconnected, falling back to polling')
-          const interval = setInterval(fetchRequests, 10000)
+          const interval = setInterval(fetchRequests, 5000)
           return () => clearInterval(interval)
         }
       })
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [providerId])
 
-  async function fetchRequests() {
-  if (!providerId) return
-  setLoading(true)
-  try {
-    // Get IDs of requests this provider already responded to
-    const { data: responded } = await supabase
-      .from('provider_responses')
-      .select('request_id')
-      .eq('provider_id', providerId.id)
+  function isMatchingRequest(req) {
+    if (!providerId) return false
+    const hasRide = providerId.service_types.includes('ride') && providerId.vehicle_type
+    const hasServices = providerId.service_types.some(s => s !== 'ride')
 
-    const respondedIds = (responded || []).map(r => r.request_id)
-
-    const { data, error } = await supabase
-      .from('requests')
-      .select('*')
-      .in('service_type', providerId.service_types)
-      .eq('city', 'Jand')
-      .in('status', ['pending', 'parsed', 'contacting'])
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (error) throw error
-    
-    // Filter out already-responded requests
-    const filtered = (data || []).filter(r => !respondedIds.includes(r.id))
-    setRequests(filtered)
-  } catch (err) {
-    setError(err.message)
-  } finally {
-    setLoading(false)
+    if (req.is_ride) {
+      return hasRide && req.vehicle_type === providerId.vehicle_type
+    } else {
+      return hasServices && providerId.service_types.includes(req.service_type)
+    }
   }
-}
+
+  async function fetchRequests() {
+    if (!providerId) return
+    setLoading(true)
+    try {
+      const { data: responded } = await supabase
+        .from('provider_responses')
+        .select('request_id')
+        .eq('provider_id', providerId.id)
+
+      const respondedIds = (responded || []).map(r => r.request_id)
+
+      const hasRide = providerId.service_types.includes('ride') && providerId.vehicle_type
+      const nonRideServices = providerId.service_types.filter(s => s !== 'ride')
+      const hasServices = nonRideServices.length > 0
+
+      let allData = []
+
+      // Fetch ride requests
+      if (hasRide) {
+        const { data: rideData } = await supabase
+          .from('requests')
+          .select('*')
+          .eq('city', 'Jand')
+          .eq('is_ride', true)
+          .eq('vehicle_type', providerId.vehicle_type)
+          .in('status', ['pending', 'parsed', 'contacting'])
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        if (rideData) allData = [...allData, ...rideData]
+      }
+
+      // Fetch service requests
+      if (hasServices) {
+        const { data: serviceData } = await supabase
+          .from('requests')
+          .select('*')
+          .eq('city', 'Jand')
+          .eq('is_ride', false)
+          .in('service_type', nonRideServices)
+          .in('status', ['pending', 'parsed', 'contacting'])
+          .order('created_at', { ascending: false })
+          .limit(20)
+
+        if (serviceData) allData = [...allData, ...serviceData]
+      }
+
+      // Sort combined by created_at
+      allData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+      // Filter out already responded
+      const filtered = allData.filter(r => !respondedIds.includes(r.id))
+      setRequests(filtered.slice(0, 20))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return { requests, loading, error, refetch: fetchRequests }
 }

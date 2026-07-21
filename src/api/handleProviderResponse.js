@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient'
 import { incrementBookingCount } from './checkPlanLimit'
+import { sendPushNotification } from './sendPushNotification'
 
 /**
  * Processes provider's response to a request
@@ -96,7 +97,11 @@ await incrementBookingCount(providerId)
       message: `Provider confirmed for ${request.preferred_date} at ${scheduledTime}`,
       action_url: `/customer/bookings`
     })
-
+    sendPushNotification(request.customer_id, {
+  title: 'Booking Confirmed',
+  message: `Provider confirmed for ${request.preferred_date} at ${scheduledTime}`,
+  actionUrl: '/customer/bookings'
+}).catch(() => {})
   // Log audit
   await supabase
     .from('audit_logs')
@@ -148,7 +153,13 @@ async function handleCounterOffer(requestId, providerId, proposedTime, request) 
       title: 'New Time Proposed',
       message: `Provider suggests ${proposedTime} instead of ${request.preferred_time}`,
       action_url: `/customer/request/${requestId}`
+      
     })
+    sendPushNotification(request.customer_id, {
+  title: 'Booking Confirmed',
+  message: `Provider confirmed for ${request.preferred_date} at ${scheduledTime}`,
+  actionUrl: '/customer/bookings'
+}).catch(() => {})
 
   // Log audit
   await supabase

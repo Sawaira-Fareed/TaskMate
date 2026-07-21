@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Users, UserCheck, Clock, CheckCircle, LogOut, Home, Settings, Crown } from 'lucide-react'
+import { Users, UserCheck, Clock, CheckCircle, LogOut, Home, Settings, Crown, Bell } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -13,14 +14,18 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalUsers: 0, pendingProviders: 0, totalCustomers: 0, totalRequests: 0, pendingProUpgrades: 0 })
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [adminName, setAdminName] = useState('')
+  const [adminUserId, setAdminUserId] = useState(null)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
+
+  const { subscribe, isSubscribed, isSupported } = usePushNotifications(adminUserId)
 
   useEffect(() => {
     async function load() {
       try {
         const user = await getCurrentUser()
+        setAdminUserId(user?.id)
         setAdminName(user?.user_metadata?.full_name || 'Admin')
 
         const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true })
@@ -91,6 +96,11 @@ export default function AdminDashboard() {
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('Admin Dashboard', 'ایڈمن ڈیش بورڈ')}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {isSupported && !isSubscribed && (
+              <button onClick={subscribe} className="text-xs text-purple-600 dark:text-purple-400 font-medium hover:underline">
+                <Bell className="w-4 h-4 inline mr-1" />{t('Enable Alerts', 'الرٹس فعال کریں')}
+              </button>
+            )}
             <div className="flex items-center gap-1 bg-purple-50 dark:bg-purple-900/30 p-1 rounded-lg">
               <button onClick={() => toggleLanguage('en')} className={`px-2 py-1 text-xs font-medium rounded ${lang === 'en' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>EN</button>
               <button onClick={() => toggleLanguage('ur')} className={`px-2 py-1 text-xs font-medium rounded ${lang === 'ur' ? 'bg-purple-600 text-white' : 'text-purple-600 dark:text-purple-400'}`}>اردو</button>

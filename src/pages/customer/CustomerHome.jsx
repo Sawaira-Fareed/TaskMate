@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Search, Wrench, Plug, ShoppingBag, Monitor } from 'lucide-react'
+import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Search, Wrench, Plug, ShoppingBag, Monitor, Car } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
+
 
 const serviceColors = {
   plumber: 'from-blue-500 to-cyan-400',
@@ -26,6 +28,8 @@ export default function CustomerHome() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showSignout, setShowSignout] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showRequestModal, setShowRequestModal] = useState(false)
+  const { subscribe, isSubscribed, isSupported } = usePushNotifications(user?.id)
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
 
@@ -149,6 +153,11 @@ export default function CustomerHome() {
                 <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{unreadCount > 9 ? '9+' : unreadCount}</span>}
               </button>
+              {isSupported && !isSubscribed && (
+  <button onClick={subscribe} className="text-xs text-purple-600 dark:text-purple-400 font-medium hover:underline px-2">
+    {t('Enable Alerts', 'الرٹس فعال کریں')}
+  </button>
+)}
               <button onClick={() => navigate('/customer/profile')} className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center"><span className="text-purple-600 dark:text-purple-400 font-semibold text-xs">{initial}</span></button>
             </div>
           </div>
@@ -181,18 +190,18 @@ export default function CustomerHome() {
             )}
           </div>
 
-          {/* MIDDLE: New Request Button (75%) + Stats (25%) */}
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* New Request — Big Purple Button */}
-            <button onClick={() => navigate('/customer/create-request')} className="w-full lg:w-[75%] bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 rounded-2xl p-6 text-white text-left transition-all shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-[0.98] flex items-center gap-5">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <Plus className="w-8 h-8" />
-              </div>
-              <div>
-                <p className="text-xl font-bold">{t('New Request', 'نئی درخواست')}</p>
-                <p className="text-sm text-white/70 mt-1">{t('Describe what you need and get matched with verified providers', 'اپنی ضرورت بتائیں اور تصدیق شدہ پرووائیڈرز سے جڑیں')}</p>
-              </div>
-            </button>
+         {/* MIDDLE: New Request Button (75%) + Stats (25%) */}
+<div className="flex flex-col lg:flex-row gap-4">
+  {/* New Request — Big Purple Button with Modal */}
+  <button onClick={() => setShowRequestModal(true)} className="w-full lg:w-[75%] bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 rounded-2xl p-6 text-white text-left transition-all shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 active:scale-[0.98] flex items-center gap-5">
+    <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+      <Plus className="w-8 h-8" />
+    </div>
+    <div>
+      <p className="text-xl font-bold">{t('New Request', 'نئی درخواست')}</p>
+      <p className="text-sm text-white/70 mt-1">{t('Book a service or ride', 'سروس یا سواری بک کریں')}</p>
+    </div>
+  </button>
 
             {/* Stats — Stacked on right */}
             <div className="w-full lg:w-[25%] grid grid-cols-2 lg:grid-cols-1 gap-2">
@@ -267,6 +276,26 @@ export default function CustomerHome() {
 </div>
         </main>
       </div>
+
+      {/* REQUEST TYPE MODAL */}
+{showRequestModal && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">{t('What do you need?', 'آپ کو کیا چاہیے؟')}</h3>
+      <div className="space-y-3">
+        <button onClick={() => { setShowRequestModal(false); navigate('/customer/create-request') }}
+          className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-3 hover:shadow-lg transition-all active:scale-95">
+          <Wrench className="w-6 h-6" /> {t('Book a Service', 'سروس بک کریں')}
+        </button>
+        <button onClick={() => { setShowRequestModal(false); navigate('/customer/book-ride') }}
+          className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-3 hover:shadow-lg transition-all active:scale-95">
+          <Car className="w-6 h-6" /> {t('Book a Ride', 'سواری بک کریں')}
+        </button>
+      </div>
+      <button onClick={() => setShowRequestModal(false)} className="mt-4 text-sm text-gray-500 hover:text-gray-700">{t('Cancel', 'منسوخ')}</button>
+    </div>
+  </div>
+)}
 
       {/* SIGN OUT MODAL */}
       {showSignout && (

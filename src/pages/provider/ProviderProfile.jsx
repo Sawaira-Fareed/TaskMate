@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, User, Mail, Phone, Star, LogOut, Camera, Upload, Check, X, Wrench, Shield, Briefcase, MapPin, Crown } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Star, LogOut, Camera, Upload, Check, X, Wrench, Shield, Briefcase, MapPin, Crown, Car } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -136,16 +136,20 @@ export default function ProviderProfile() {
   }
 
   async function handleSaveProfile() {
-    setSaving(true)
-    try {
-      await supabase.from('users').update({ phone: editForm.phone }).eq('id', user.id)
-      await supabase.from('providers').update({ experience: editForm.experience, bio: editForm.bio }).eq('user_id', user.id)
-      setProfile(prev => ({ ...prev, phone: editForm.phone }))
-      setProvider(prev => ({ ...prev, experience: editForm.experience, bio: editForm.bio }))
-      setEditing(false)
-    } catch (err) { alert('Failed to update: ' + err.message) }
-    finally { setSaving(false) }
-  }
+  setSaving(true)
+  try {
+    await supabase.from('users').update({ phone: editForm.phone }).eq('id', user.id)
+    await supabase.from('providers').update({ 
+      experience: editForm.experience, 
+      bio: editForm.bio,
+      vehicle_type: provider.vehicle_type 
+    }).eq('user_id', user.id)
+    setProfile(prev => ({ ...prev, phone: editForm.phone }))
+    setProvider(prev => ({ ...prev, experience: editForm.experience, bio: editForm.bio }))
+    setEditing(false)
+  } catch (err) { alert('Failed to update: ' + err.message) }
+  finally { setSaving(false) }
+}
 
   const serviceNames = { plumber: 'Plumber 🔧', electrician: 'Electrician ⚡', grocery: 'Grocery 🛒', computer_repair: 'Computer Repair 💻' }
   const tierColors = { gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', silver: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', bronze: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' }
@@ -230,6 +234,9 @@ export default function ProviderProfile() {
               <InfoRow icon={Mail} label="Email" value={profile?.email} />
               <InfoRow icon={Phone} label={t('Phone', 'فون')} value={profile?.phone} />
               <InfoRow icon={Briefcase} label={t('Services', 'خدمات')} value={provider?.service_types?.map(s => serviceNames[s] || s).join(', ')} />
+                {provider?.vehicle_type && (
+  <InfoRow icon={Car} label={t('Vehicle', 'گاڑی')} value={provider.vehicle_type.charAt(0).toUpperCase() + provider.vehicle_type.slice(1)} />
+)}
               <InfoRow icon={MapPin} label={t('City', 'شہر')} value={profile?.city || 'Jand'} />
               {profile?.cnic_number && <InfoRow icon={Shield} label="CNIC" value={profile.cnic_number} />}
               {provider?.experience && <InfoRow icon={Star} label={t('Experience', 'تجربہ')} value={`${provider.experience} ${t('years', 'سال')}`} />}
@@ -243,6 +250,19 @@ export default function ProviderProfile() {
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('Phone', 'فون')}</label><input type="tel" value={editForm.phone} onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm" /></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('Experience', 'تجربہ')}</label><input type="text" value={editForm.experience} onChange={(e) => setEditForm(prev => ({ ...prev, experience: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm" /></div>
               <div><label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('Bio', 'تعارف')}</label><textarea value={editForm.bio} onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))} rows={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm resize-none" /></div>
+              {provider?.service_types?.includes('ride') && (
+  <div>
+    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t('Vehicle Type', 'گاڑی کی قسم')}</label>
+    <div className="grid grid-cols-3 gap-2">
+      {['bike', 'rickshaw', 'car'].map(v => (
+        <button key={v} type="button" onClick={() => setProvider(prev => ({ ...prev, vehicle_type: v }))}
+          className={`py-2 rounded-lg text-xs font-medium capitalize transition-all ${provider?.vehicle_type === v ? 'bg-purple-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}`}>
+          {v}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
             </div>
           )}
         </div>
