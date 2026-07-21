@@ -9,7 +9,7 @@
 
 ## Overview
 
-**Zaria** is a Progressive Web Application that connects customers with local service providers in Pakistan.No phone calls. No manual searching. Just describe your problem and get matched with the nearest available provider.
+**Zaria** is a Progressive Web Application that connects customers with local service providers and ride drivers in Pakistan. No phone calls. No manual searching. Just describe what you need and get matched instantly.
 
 ---
 
@@ -19,23 +19,40 @@
 
 ---
 
-## What Zaria Solves
+## What Zaria Does
 
-- **No more phone calls.** You don't need to call multiple providers, explain your problem repeatedly, or negotiate over the phone. Type once and you're done.
+### For Customers
+- **Book a Service.** Need a plumber, electrician, grocery delivery, or computer repair? Type what you need in Urdu or English and get matched with the nearest verified provider.
+- **Book a Ride.** Need a rickshaw, bike, or car? Enter pickup and dropoff — drivers bid their fares and you pick the best offer.
+- **Browse Providers.** See all available providers with ratings, completed jobs, and service types. Book directly from their profile.
+- **In-App Chat.** Message your provider without sharing your phone number. Real-time chat with read receipts.
+- **Real-Time Tracking.** Watch your request go from pending to confirmed — no refreshing needed.
 
-- **No language barrier.** Whether you prefer Urdu or English, the app understands both. Describe your problem in whatever language feels natural.
+### For Providers
+- **Get Leads Passively.** Receive service requests and ride bookings without being online 24/7.
+- **Set Your Own Fares.** For rides, offer your price. Customer chooses the best deal.
+- **Build Your Reputation.** Earn ratings, complete jobs, and climb from Bronze to Gold tier.
+- **Free & Pro Plans.** Free providers get 4 bookings per week. Go Pro for unlimited bookings, priority matching, and a verified badge.
+- **Push Notifications.** Get alerted about new requests even when the app is closed.
 
-- **No endless searching.** Stop asking neighbors for plumber numbers or scrolling through Facebook groups. Zaria finds the nearest available provider for you.
+### For Admins
+- **Verify Providers.** Review CNIC images, certificates, and approve or reject with a reason message.
+- **Manage Pro Upgrades.** Approve Pro plan requests after verifying payment screenshots.
+- **Platform-Wide Announcements.** Send notifications to all users from one dashboard.
+- **Block Malicious Users.** Permanently block providers who misuse the platform.
 
-- **No uncertainty about who's coming.** Every provider is verified through CNIC checks before they can accept jobs. You know who's entering your home.
+---
 
-- **No guessing about pricing.** You set your budget upfront and providers respond knowing what you're willing to pay.
+## Key Features
 
-- **No wondering what's happening.** Track your request in real time — see when a provider is contacted, when they accept, and when your booking is confirmed.
-
-- **No forgetting past jobs.** Your complete booking history is saved, making it easy to book the same trusted provider again.
-
-- **No app to download.** Zaria is a PWA — install it directly from your browser. Works on any phone, takes almost no storage.
+- **No Phone Calls.** Everything happens through the app — booking, chat, and confirmation.
+- **Urdu & English.** Full bilingual support across every page.
+- **Location Sharing.** Share your GPS coordinates or type a mohalla name. No address needed in Jand.
+- **Dark Mode.** Built-in theme toggle across all screens.
+- **Installable PWA.** Add to home screen — works like a native app. Push notifications even when closed.
+- **Realtime Everything.** Requests, bookings, messages, and notifications update live via Supabase Realtime.
+- **Verified Providers.** CNIC verification + certificate upload before going live.
+- **Voice Notes.** Record and send voice notes with your service requests.
 
 ---
 
@@ -46,7 +63,7 @@
 | Frontend | Vite + React 19 + TailwindCSS |
 | Backend | Supabase (PostgreSQL + Auth + Storage + Realtime) |
 | AI | Gemini API + Groq API (fallback) |
-| PWA | Web Push API, Service Worker |
+| PWA | vite-plugin-pwa, Web Push API, Service Worker |
 | Hosting | Vercel |
 
 ---
@@ -59,7 +76,7 @@
 | Provider | `provider@gmail.com` | `provider123` |
 | Admin | `admin@gmail.com` | `admin123` |
 
-> Providers must be approved by an admin before receiving requests.
+> Providers must be approved by an admin before receiving requests. Ride providers must also select a vehicle type.
 
 ---
 
