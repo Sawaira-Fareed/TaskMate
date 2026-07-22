@@ -34,7 +34,8 @@ export default function Landing() {
       if (session) {
         setIsAuthenticated(true)
         const { data: profile } = await supabase.from('users').select('role').eq('id', session.user.id).single()
-        setUserRole(profile?.role || 'customer')
+const roles = Array.isArray(profile?.role) ? profile.role : [profile?.role]
+setUserRole(roles[0] || 'customer')
       }
     }
     checkAuth()
@@ -51,16 +52,22 @@ export default function Landing() {
   if (!session) return
 
   const { data: profile } = await supabase.from('users').select('role').eq('id', session.user.id).single()
+  const roles = Array.isArray(profile?.role) ? profile.role : [profile?.role]
 
-  if (profile?.role === 'admin') {
+  console.log('[Landing] Roles:', roles, 'Profile:', profile)
+
+  if (roles.includes('admin')) {
     navigate('/admin/dashboard')
-  } else if (profile?.role === 'provider') {
+  } else if (roles.includes('provider')) {
     const { data: provider } = await supabase.from('providers').select('is_approved').eq('user_id', session.user.id).single()
+    console.log('[Landing] Provider:', provider)
     if (provider?.is_approved) {
       navigate('/provider/dashboard')
     } else {
       navigate('/provider/waiting-approval')
     }
+  } else if (roles.includes('customer')) {
+    navigate('/customer/dashboard')
   } else {
     navigate('/customer/dashboard')
   }

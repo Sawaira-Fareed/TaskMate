@@ -38,6 +38,11 @@ import RideRequests from './pages/provider/RideRequests'
 import BookRide from './pages/customer/BookRide'
 
 
+import BecomeProvider from './pages/auth/BecomeProvider'
+
+
+
+
 export default function App() {
   return (
     <Routes>
@@ -142,6 +147,9 @@ export default function App() {
   <ProtectedRoute allowedRoles={['admin']}><AdminProUpgrades /></ProtectedRoute>
 } />
 
+<Route path="/become-provider" element={
+  <ProtectedRoute allowedRoles={['customer']}><BecomeProvider /></ProtectedRoute>
+} />
       {/* Catch-all */}
       <Route path="*" element={<Landing />} />
     </Routes>

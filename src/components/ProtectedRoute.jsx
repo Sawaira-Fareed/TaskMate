@@ -34,15 +34,22 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
         return
       }
 
+      // Handle array roles
+      const userRoles = Array.isArray(userData.role) ? userData.role : [userData.role]
+
       // Check role authorization
-      if (allowedRoles.length > 0 && !allowedRoles.includes(userData.role)) {
+      if (allowedRoles.length > 0 && !allowedRoles.some(r => userRoles.includes(r))) {
+        // Redirect to appropriate dashboard based on first role
+        if (userRoles.includes('admin')) setRedirectPath('/admin/dashboard')
+        else if (userRoles.includes('provider')) setRedirectPath('/provider/dashboard')
+        else setRedirectPath('/customer/dashboard')
         setIsValid(false)
         setChecking(false)
         return
       }
 
       // For providers: check if approved
-      if (userData.role === 'provider') {
+      if (userRoles.includes('provider')) {
         const { data: provider } = await supabase
           .from('providers')
           .select('is_approved')
@@ -50,7 +57,6 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
           .single()
 
         if (provider && !provider.is_approved) {
-          // Allow only the waiting-approval page
           const currentPath = window.location.pathname
           if (currentPath !== '/provider/waiting-approval') {
             setRedirectPath('/provider/waiting-approval')

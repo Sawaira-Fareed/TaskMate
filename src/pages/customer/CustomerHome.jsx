@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Search, Wrench, Plug, ShoppingBag, Monitor, Car } from 'lucide-react'
+import { Plus, Clock, CheckCircle, Star, ChevronRight, LogOut, Home, ClipboardList, Calendar, Bell, User, Search, Wrench, Plug, ShoppingBag, Monitor, Car, Briefcase } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/auth'
 import { supabase } from '@/lib/supabaseClient'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -273,7 +273,29 @@ export default function CustomerHome() {
       })}
     </div>
   )}
+
 </div>
+{(!userProfile?.role?.includes('provider')) && (
+  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/10 dark:to-teal-900/10 rounded-2xl border border-emerald-200 dark:border-emerald-800 p-5 flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+        <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+          {t('Want to earn with Zaria?', 'زریعہ کے ساتھ کمانا چاہتے ہیں؟')}
+        </p>
+        <p className="text-xs text-emerald-600 dark:text-emerald-500">
+          {t('Become a provider — it\'s free!', 'پرووائیڈر بنیں — یہ مفت ہے!')}
+        </p>
+      </div>
+    </div>
+    <button onClick={() => navigate('/become-provider')}
+      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-colors flex-shrink-0">
+      {t('Get Started', 'شروع کریں')}
+    </button>
+  </div>
+)}
         </main>
       </div>
 
