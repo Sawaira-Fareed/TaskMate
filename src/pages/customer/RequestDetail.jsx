@@ -211,6 +211,21 @@ export default function RequestDetail() {
             <button onClick={handleMarkDone} disabled={actionLoading} className="w-full py-4 rounded-2xl text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
               <Check className="w-5 h-5" /> {t('Mark as Done', 'مکمل کے طور پر نشان زد کریں')}
             </button>
+            {/* Cancel Booking — even after confirmed */}
+<button onClick={async () => {
+  if (!confirm(t('Cancel this booking? The provider will be notified.', 'کیا آپ یہ بکنگ منسوخ کرنا چاہتے ہیں؟ پرووائیڈر کو اطلاع کر دی جائے گی۔'))) return
+  setActionLoading(true)
+  try {
+    await supabase.from('bookings').update({ status: 'cancelled' }).eq('request_id', id)
+    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', id)
+    navigate('/customer/my-requests', { replace: true })
+  } catch (err) { alert('Failed: ' + err.message) }
+  finally { setActionLoading(false) }
+}} disabled={actionLoading}
+  className="w-full py-3 rounded-2xl text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 transition-colors">
+  <X className="w-4 h-4 inline mr-2" />
+  {t('Cancel Booking', 'بکنگ منسوخ کریں')}
+</button>
           </div>
         )}
       </div>
