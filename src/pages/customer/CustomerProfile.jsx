@@ -63,18 +63,26 @@ export default function CustomerProfile() {
     input.click()
   }
 
-  async function handleSaveProfile() {
-    setSaving(true)
-    try {
-      const { error } = await supabase.from('users').update({
-        full_name: editForm.full_name, phone: editForm.phone, city: editForm.city, address: editForm.address,
-      }).eq('id', user.id)
-      if (error) throw error
-      setProfile(prev => ({ ...prev, ...editForm }))
-      setEditing(false)
-    } catch (err) { alert('Failed to update: ' + err.message) }
-    finally { setSaving(false) }
-  }
+    function sanitize(str) {
+  if (!str) return str
+  return str.replace(/[<>{}]/g, '').trim()
+}
+
+async function handleSaveProfile() {
+  setSaving(true)
+  try {
+    const { error } = await supabase.from('users').update({
+      full_name: sanitize(editForm.full_name), 
+      phone: sanitize(editForm.phone), 
+      city: sanitize(editForm.city), 
+      address: sanitize(editForm.address),
+    }).eq('id', user.id)
+    if (error) throw error
+    setProfile(prev => ({ ...prev, ...editForm }))
+    setEditing(false)
+  } catch (err) { alert('Failed to update: ' + err.message) }
+  finally { setSaving(false) }
+}
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">

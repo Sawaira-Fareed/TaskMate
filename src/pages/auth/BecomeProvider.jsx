@@ -85,6 +85,10 @@ export default function BecomeProvider() {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   }
+  function sanitize(str) {
+  if (!str) return str
+  return str.replace(/[<>{}]/g, '').trim()
+}
 
   async function handleSubmit() {
     if (!validateStep(3)) return;
@@ -109,27 +113,26 @@ export default function BecomeProvider() {
       const { data: currentUser } = await supabase.from('users').select('role').eq('id', user.id).single();
       const currentRoles = currentUser?.role || [];
       const newRoles = currentRoles.includes('provider') ? currentRoles : [...currentRoles, 'provider'];
+      
+await supabase.from('users').update({
+  cnic_number: sanitize(formData.cnicNumber),
+  cnic_front_url: cnicFrontUrl,
+  cnic_back_url: cnicBackUrl,
+  role: newRoles,
+}).eq('id', user.id);
 
-      await supabase.from('users').update({
-        cnic_number: formData.cnicNumber,
-        cnic_front_url: cnicFrontUrl,
-        cnic_back_url: cnicBackUrl,
-        role: newRoles,
-      }).eq('id', user.id);
-
-      // Create provider record
-      const { error: providerError } = await supabase.from('providers').insert({
-        user_id: user.id,
-        service_types: selectedServices,
-        phone: '', // will be filled from profile
-        is_approved: false,
-        is_online: false,
-        tier: 'bronze',
-        experience: formData.experience || null,
-        bio: formData.bio || null,
-        certificate_url: certificateUrl || null,
-        vehicle_type: selectedServices.includes('ride') ? vehicleType : null,
-      });
+   const { error: providerError } = await supabase.from('providers').insert({
+  user_id: user.id,
+  service_types: selectedServices,
+  phone: '',
+  is_approved: false,
+  is_online: false,
+  tier: 'bronze',
+  experience: sanitize(formData.experience) || null,
+  bio: sanitize(formData.bio) || null,
+  certificate_url: certificateUrl || null,
+  vehicle_type: selectedServices.includes('ride') ? vehicleType : null,
+});
 
       if (providerError) throw providerError;
 

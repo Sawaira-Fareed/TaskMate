@@ -134,23 +134,28 @@ export default function ProviderProfile() {
     await supabase.from('providers').update({ certificate_url: null }).eq('user_id', user.id)
     setProvider(prev => ({ ...prev, certificate_url: null }))
   }
+  function sanitize(str) {
+  if (!str) return str
+  return str.replace(/[<>{}]/g, '').trim()
+}
 
   async function handleSaveProfile() {
   setSaving(true)
   try {
-    await supabase.from('users').update({ phone: editForm.phone }).eq('id', user.id)
+    await supabase.from('users').update({ 
+      phone: sanitize(editForm.phone) 
+    }).eq('id', user.id)
     await supabase.from('providers').update({ 
-      experience: editForm.experience, 
-      bio: editForm.bio,
+      experience: sanitize(editForm.experience), 
+      bio: sanitize(editForm.bio),
       vehicle_type: provider.vehicle_type 
     }).eq('user_id', user.id)
-    setProfile(prev => ({ ...prev, phone: editForm.phone }))
-    setProvider(prev => ({ ...prev, experience: editForm.experience, bio: editForm.bio }))
+    setProfile(prev => ({ ...prev, phone: sanitize(editForm.phone) }))
+    setProvider(prev => ({ ...prev, experience: sanitize(editForm.experience), bio: sanitize(editForm.bio) }))
     setEditing(false)
   } catch (err) { alert('Failed to update: ' + err.message) }
   finally { setSaving(false) }
 }
-
   const serviceNames = { plumber: 'Plumber 🔧', electrician: 'Electrician ⚡', grocery: 'Grocery 🛒', computer_repair: 'Computer Repair 💻' }
   const tierColors = { gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', silver: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', bronze: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' }
 

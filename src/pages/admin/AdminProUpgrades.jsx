@@ -89,9 +89,13 @@ export default function AdminProUpgrades() {
                           <p className="text-xs text-gray-500">{u.provider?.user?.email}</p>
                         </div>
                       </div>
-                      <a href={u.transaction_screenshot} target="_blank" className="inline-flex items-center gap-1 text-sm text-purple-600 hover:underline mb-4">
-                        <ExternalLink className="w-3.5 h-3.5" /> {t('View Screenshot', 'اسکرین شاٹ دیکھیں')}
-                      </a>
+                      {u.screenshot_url ? (
+  <a href={u.screenshot_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-purple-600 hover:underline mb-4">
+    <ExternalLink className="w-3.5 h-3.5" /> {t('View Screenshot', 'اسکرین شاٹ دیکھیں')}
+  </a>
+) : (
+  <p className="text-xs text-gray-400 mb-4">{t('No screenshot uploaded', 'کوئی اسکرین شاٹ اپ لوڈ نہیں')}</p>
+)}
                       <div className="flex gap-2">
                         <button onClick={() => handleApprove(u)} className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-1.5"><Check className="w-4 h-4" /> {t('Approve', 'منظور')}</button>
                         <button onClick={() => handleReject(u)} className="flex-1 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5"><X className="w-4 h-4" /> {t('Reject', 'مسترد')}</button>

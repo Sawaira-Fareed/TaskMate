@@ -16,6 +16,10 @@ const vehicleTypes = [
   { id: 'rickshaw', icon: Users, label: 'Rickshaw', labelUr: 'رکشہ', color: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20', textColor: 'text-emerald-600 dark:text-emerald-400' },
   { id: 'car', icon: Car, label: 'Car', labelUr: 'کار', color: 'from-blue-500 to-indigo-500', bg: 'bg-blue-50 dark:bg-blue-900/20', textColor: 'text-blue-600 dark:text-blue-400' },
 ]
+function sanitize(str) {
+  if (!str) return str
+  return str.replace(/[<>{}]/g, '').trim()
+}
 
 export default function BookRide() {
   const navigate = useNavigate()
@@ -67,21 +71,25 @@ export default function BookRide() {
     setError('')
     try {
       const user = await getCurrentUser()
-      const { data: req, error: insertErr } = await supabase.from('requests').insert({
-        customer_id: user.id,
-        raw_text: `${vehicle} ride from ${pickup} to ${dropoff}`,
-        service_type: 'ride',
-        is_ride: true,
-        pickup_location: pickup,
-        dropoff_location: dropoff,
-        vehicle_type: vehicle,
-        city: 'Jand',
-        status: 'contacting',
-        preferred_date: new Date().toISOString().split('T')[0],
-        preferred_time: new Date().toTimeString().slice(0, 5),
-        parsed_intent: { pickup, dropoff, vehicle },
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 min
-      }).select().single()
+
+      const sanitizedPickup = sanitize(pickup)
+const sanitizedDropoff = sanitize(dropoff)
+
+const { data: req, error: insertErr } = await supabase.from('requests').insert({
+  customer_id: user.id,
+  raw_text: sanitize(`${vehicle} ride from ${pickup} to ${dropoff}`),
+  service_type: 'ride',
+  is_ride: true,
+  pickup_location: sanitizedPickup,
+  dropoff_location: sanitizedDropoff,
+  vehicle_type: vehicle,
+  city: 'Jand',
+  status: 'contacting',
+  preferred_date: new Date().toISOString().split('T')[0],
+  preferred_time: new Date().toTimeString().slice(0, 5),
+  parsed_intent: { pickup: sanitizedPickup, dropoff: sanitizedDropoff, vehicle },
+  expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+}).select().single()
 
       if (insertErr) throw insertErr
       setRequestId(req.id)

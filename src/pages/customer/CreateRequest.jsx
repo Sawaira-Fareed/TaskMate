@@ -70,6 +70,10 @@ const [coordinates, setCoordinates] = useState(null)
     }
   }
 
+  function sanitize(str) {
+  if (!str) return str
+  return str.replace(/[<>{}]/g, '').trim()
+}
   const stopRecording = () => {
     mediaRecorder?.stop()
     mediaRecorder?.stream.getTracks().forEach(track => track.stop())
@@ -144,7 +148,7 @@ const shareLocationLink = () => {
         }
       }
 
-      const rawText = description || `Need ${serviceType} service at ${location}`
+      const rawText = sanitize(description) || `Need ${sanitize(serviceType)} service at ${sanitize(location)}`
 
       let parsedIntent
       try {
@@ -159,19 +163,19 @@ const shareLocationLink = () => {
       parsedIntent.preferred_time = time || parsedIntent.preferred_time
       parsedIntent.urgency = priority || parsedIntent.urgency
 
-      const { data: request, error: insertError } = await supabase.from('requests').insert({
-        customer_id: user.id,
-        raw_text: rawText,
-        service_type: parsedIntent.service_type,
-        items: parsedIntent.items || [],
-        preferred_date: parsedIntent.preferred_date,
-        preferred_time: parsedIntent.preferred_time,
-        city: 'Jand',
-        language: parsedIntent.language || 'urdu',
-        status: 'pending',
-        parsed_intent: {
+     const { data: request, error: insertError } = await supabase.from('requests').insert({
+  customer_id: user.id,
+  raw_text: sanitize(rawText),
+  service_type: sanitize(parsedIntent.service_type),
+  items: parsedIntent.items || [],
+  preferred_date: parsedIntent.preferred_date,
+  preferred_time: parsedIntent.preferred_time,
+  city: 'Jand',
+  language: sanitize(parsedIntent.language) || 'urdu',
+  status: 'pending',
+  parsed_intent: {
   ...parsedIntent,
-  location: location,                              // text address
+  location: sanitize(location),                             // text address
   coordinates: coordinates ? `${coordinates.lat},${coordinates.lng}` : null,  // GPS
   voice_note_url: voiceNoteUrl,
   description

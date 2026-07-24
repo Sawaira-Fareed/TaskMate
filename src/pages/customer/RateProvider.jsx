@@ -84,6 +84,16 @@ export default function RateProvider() {
         status_after: 'completed'
       })
 
+      // Record payment
+      await supabase.from('payments').insert({
+        user_id: booking.customer_id,
+        provider_id: booking.provider_id,
+        booking_id: booking.id,
+        amount: parseInt(price),
+        type: 'service_payment',
+        status: 'completed'
+      })
+
       navigate('/customer/my-requests', { replace: true })
     } catch (err) {
       alert('Failed: ' + err.message)

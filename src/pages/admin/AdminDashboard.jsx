@@ -30,7 +30,7 @@ export default function AdminDashboard() {
 
         const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true })
         const { count: pendingProviders } = await supabase.from('providers').select('*', { count: 'exact', head: true }).eq('is_approved', false)
-        const { count: totalCustomers } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'customer')
+        const { count: totalCustomers } = await supabase.from('users').select('*', { count: 'exact', head: true }).contains('role', ['customer'])
         const { count: totalRequests } = await supabase.from('requests').select('*', { count: 'exact', head: true })
         const { count: pendingProUpgrades } = await supabase.from('pro_upgrade_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending')
 

@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Crown, X } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
 
+
 export default function ProviderPricing() {
   const navigate = useNavigate()
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
@@ -13,6 +14,7 @@ export default function ProviderPricing() {
   const [paymentMethod, setPaymentMethod] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false)
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
 
@@ -30,35 +32,90 @@ export default function ProviderPricing() {
     setScreenshotPreview(URL.createObjectURL(file))
   }
 
-  async function handleSubmit() {
-    if (!paymentMethod) { alert(t('Select payment method', 'ادائیگی کا طریقہ منتخب کریں')); return }
-    if (!screenshot) { alert(t('Upload payment screenshot', 'ادائیگی کا اسکرین شاٹ اپ لوڈ کریں')); return }
-    setSubmitting(true)
-    try {
-      const user = await getCurrentUser()
-      const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
 
-      // Upload screenshot
-      const ext = screenshot.name.split('.').pop()
-      const path = `pro-upgrades/${provider.id}/${Date.now()}.${ext}`
-      await supabase.storage.from('pro-upgrades').upload(path, screenshot)
-      const { data: urlData } = supabase.storage.from('pro-upgrades').getPublicUrl(path)
+  
+useEffect(() => {
+  async function checkExisting() {
+    const user = await getCurrentUser()
+    const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
+    if (!provider) return
+    
+    const { data: existing } = await supabase
+      .from('pro_upgrade_requests')
+      .select('id, status, created_at')
+      .eq('provider_id', provider.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
 
-      // Save upgrade request
-      await supabase.from('pro_upgrade_requests').insert({
-        provider_id: provider.id,
-        payment_method: paymentMethod,
-        screenshot_url: urlData.publicUrl,
-        status: 'pending'
-      })
-
-      setSubmitted(true)
-    } catch (err) {
-      alert('Failed: ' + err.message)
-    } finally {
-      setSubmitting(false)
+    if (existing) {
+      const lastRequest = new Date(existing.created_at)
+      const now = new Date()
+      if (lastRequest.getMonth() === now.getMonth() && lastRequest.getFullYear() === now.getFullYear()) {
+        setAlreadySubmitted(true)
+      }
     }
   }
+  checkExisting()
+}, [])
+async function handleSubmit() {
+  if (!paymentMethod) { alert(t('Select payment method', 'ادائیگی کا طریقہ منتخب کریں')); return }
+  if (!screenshot) { alert(t('Upload payment screenshot', 'ادائیگی کا اسکرین شاٹ اپ لوڈ کریں')); return }
+  setSubmitting(true)
+  try {
+    const user = await getCurrentUser()
+    const { data: provider } = await supabase.from('providers').select('id').eq('user_id', user.id).single()
+
+    // Check if already submitted this month
+    const { data: existing } = await supabase
+      .from('pro_upgrade_requests')
+      .select('id, status, created_at')
+      .eq('provider_id', provider.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (existing) {
+      const lastRequest = new Date(existing.created_at)
+      const now = new Date()
+      if (lastRequest.getMonth() === now.getMonth() && lastRequest.getFullYear() === now.getFullYear()) {
+        alert(t('You have already submitted a request this month', 'آپ اس مہینے پہلے ہی درخواست جمع کرا چکے ہیں'))
+        setSubmitting(false)
+        return
+      }
+    }
+
+    // Upload screenshot
+    const ext = screenshot.name.split('.').pop()
+    const path = `${provider.id}/${Date.now()}.${ext}`
+    await supabase.storage.from('pro-upgrades').upload(path, screenshot)
+    const { data: urlData } = supabase.storage.from('pro-upgrades').getPublicUrl(path)
+
+    // Save upgrade request
+    await supabase.from('pro_upgrade_requests').insert({
+      provider_id: provider.id,
+      payment_method: paymentMethod,
+      screenshot_url: urlData.publicUrl,
+      status: 'pending'
+    })
+
+    // Record payment
+    await supabase.from('payments').insert({
+      user_id: user.id,
+      provider_id: provider.id,
+      amount: 1000,
+      type: 'pro_upgrade',
+      payment_method: paymentMethod,
+      status: 'pending'
+    })
+
+    setSubmitted(true)
+  } catch (err) {
+    alert('Failed: ' + err.message)
+  } finally {
+    setSubmitting(false)
+  }
+}
 
   const freeFeatures = [
     '4 Bookings / Week',
@@ -164,12 +221,13 @@ export default function ProviderPricing() {
                     ))}
                   </ul>
 
-                  <button
-                    onClick={() => setShowModal(true)}
-                    className="w-full py-3 bg-white text-purple-700 rounded-xl text-sm font-bold hover:bg-yellow-400 hover:text-purple-900 transition-all duration-200 shadow-lg"
-                  >
-                    {t('Upgrade to PRO', 'پرو میں اپ گریڈ کریں')}
-                  </button>
+                 <button
+  onClick={() => setShowModal(true)}
+  disabled={alreadySubmitted}
+  className="w-full py-3 bg-white text-purple-700 rounded-xl text-sm font-bold hover:bg-yellow-400 hover:text-purple-900 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {alreadySubmitted ? t('Already Submitted', 'پہلے ہی جمع کرا دیا') : t('Upgrade to PRO', 'پرو میں اپ گریڈ کریں')}
+</button>
                 </div>
               </div>
             </div>

@@ -30,9 +30,9 @@ export function useChat(bookingId, currentUserId) {
     }
     setLoading(false)
   }
-
-  const sendMessage = useCallback(async (text, receiverId) => {
+const sendMessage = useCallback(async (text, receiverId) => {
     if (!text.trim() || !bookingId || !currentUserId) return
+    const sanitizedText = text.trim().replace(/[<>{}]/g, '')
     setSending(true)
     const { data, error } = await supabase
       .from('messages')
@@ -40,12 +40,11 @@ export function useChat(bookingId, currentUserId) {
         booking_id: bookingId,
         sender_id: currentUserId,
         receiver_id: receiverId,
-        message: text.trim(),
+        message: sanitizedText,
         is_read: false,
       })
       .select()
       .single()
-
     if (!error && data) {
       setMessages(prev => [...prev, data])
 
@@ -53,13 +52,13 @@ export function useChat(bookingId, currentUserId) {
       const { data: receiver } = await supabase.from('users').select('role').eq('id', receiverId).single()
       const chatPath = receiver?.role === 'provider' ? `/provider/chat/${bookingId}` : `/customer/chat/${bookingId}`
 
-      await supabase.from('notifications').insert({
-        user_id: receiverId,
-        type: 'new_request',
-        title: sender?.full_name || 'Someone',
-        message: text.trim().substring(0, 60) + (text.length > 60 ? '...' : ''),
-        action_url: chatPath
-      })
+     await supabase.from('notifications').insert({
+  user_id: receiverId,
+  type: 'new_request',
+  title: (sender?.full_name || 'Someone').replace(/[<>{}]/g, ''),
+  message: sanitizedText.substring(0, 60) + (sanitizedText.length > 60 ? '...' : ''),
+  action_url: chatPath
+})
       // Send push notification
 sendPushNotification(receiverId, {
   title: sender?.full_name || 'Someone',

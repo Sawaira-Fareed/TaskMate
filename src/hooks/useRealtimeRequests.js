@@ -20,43 +20,54 @@ export function useRealtimeRequests(userId) {
     if (userId) getProvider()
   }, [userId])
 
-  useEffect(() => {
-    if (!providerId) return
-    fetchRequests()
+ useEffect(() => {
+  if (!providerId) return
+  fetchRequests()
 
-    const channel = supabase
-      .channel('requests-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'requests' },
-        (payload) => {
-          const newRequest = payload.new
-          if (newRequest.city === 'Jand' && ['pending', 'parsed', 'contacting'].includes(newRequest.status)) {
-            if (isMatchingRequest(newRequest)) {
-              setRequests(prev => [newRequest, ...prev])
-            }
-          }
+  const channel = supabase
+    .channel('requests-realtime')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'requests' },
+      (payload) => {
+        const newRequest = payload.new
+        if (
+          newRequest.city === 'Jand' &&
+          ['pending', 'parsed', 'contacting'].includes(newRequest.status) &&
+          isMatchingRequest(newRequest)
+        ) {
+          setRequests(prev => {
+            if (prev.find(r => r.id === newRequest.id)) return prev
+            return [newRequest, ...prev]
+          })
         }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'requests' },
-        (payload) => {
-          setRequests(prev => prev.map(r => r.id === payload.new.id ? payload.new : r))
+      }
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'requests' },
+      (payload) => {
+        const updated = payload.new
+        // Remove from list if confirmed/cancelled/expired
+        if (['confirmed', 'cancelled', 'expired', 'no_provider'].includes(updated.status)) {
+          setRequests(prev => prev.filter(r => r.id !== updated.id))
+        } else {
+          setRequests(prev => prev.map(r => r.id === updated.id ? updated : r))
         }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime connected')
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          console.warn('Realtime disconnected, falling back to polling')
-          const interval = setInterval(fetchRequests, 5000)
-          return () => clearInterval(interval)
-        }
-      })
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime connected')
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        console.warn('Realtime disconnected, falling back to polling')
+        const interval = setInterval(fetchRequests, 5000)
+        return () => clearInterval(interval)
+      }
+    })
 
-    return () => { supabase.removeChannel(channel) }
-  }, [providerId])
+  return () => { supabase.removeChannel(channel) }
+}, [providerId])
 
   function isMatchingRequest(req) {
     if (!providerId) return false

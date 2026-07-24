@@ -8,17 +8,29 @@ import { sendPushNotification } from './sendPushNotification'
  */
 export async function handleProviderResponse(requestId, providerId, responseType, proposedTime = null) {
   
-  // Prevent duplicate responses
-  const { data: existing } = await supabase
-    .from('provider_responses')
-    .select('id')
-    .eq('request_id', requestId)
-    .eq('provider_id', providerId)
-    .single()
+  // Prevent duplicate responses — atomic check
+const { data: existing } = await supabase
+  .from('provider_responses')
+  .select('id')
+  .eq('request_id', requestId)
+  .eq('provider_id', providerId)
+  .maybeSingle()
 
-  if (existing) {
-    throw new Error('You have already responded to this request')
-  }
+if (existing) {
+  throw new Error('You have already responded to this request')
+}
+
+// Check if someone else already accepted this request
+const { data: alreadyAccepted } = await supabase
+  .from('provider_responses')
+  .select('id')
+  .eq('request_id', requestId)
+  .eq('response_type', 'accepted')
+  .maybeSingle()
+
+if (alreadyAccepted && responseType === 'accepted') {
+  throw new Error('This request was already accepted by another provider')
+}
 
   // Get request info
   const { data: request, error: requestError } = await supabase

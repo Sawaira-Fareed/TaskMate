@@ -35,6 +35,29 @@ export default function ProviderRequestDetail() {
     }
     load()
   }, [id])
+  
+  // Realtime: listen for request status changes
+useEffect(() => {
+  if (!id) return
+  const channel = supabase
+    .channel(`provider-request-${id}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'requests' },
+      (payload) => {
+        if (payload.new.id === id) {
+          setRequest(payload.new)
+          // If someone else accepted, show message and disable buttons
+          if (payload.new.status === 'confirmed') {
+            setAlreadyResponded(true)
+          }
+        }
+      }
+    )
+    .subscribe()
+
+  return () => { supabase.removeChannel(channel) }
+}, [id])
 
   const handleAccept = async () => {
     if (alreadyResponded) return
