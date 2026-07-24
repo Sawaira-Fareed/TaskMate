@@ -2,41 +2,40 @@ import { Moon, Sun } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function ThemeToggle() {
-  const [dark, setDark] = useState(false)
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('zaria-theme')
+    if (saved) return saved === 'dark'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
 
   useEffect(() => {
-    const saved = localStorage.getItem('zaria-theme')
-    if (saved === 'dark') {
+    if (dark) {
       document.documentElement.classList.add('dark')
-      setDark(true)
-    } else if (saved === 'light') {
-      document.documentElement.classList.remove('dark')
-      setDark(false)
     } else {
-      // No saved preference — use system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      if (prefersDark) {
-        document.documentElement.classList.add('dark')
-        setDark(true)
-      }
+      document.documentElement.classList.remove('dark')
     }
+    localStorage.setItem('zaria-theme', dark ? 'dark' : 'light')
+  }, [dark])
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e) => {
+      const saved = localStorage.getItem('zaria-theme')
+      if (!saved) setDark(e.matches)
+    }
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [])
 
-  const toggle = () => {
-    if (dark) {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('zaria-theme', 'light')
-      setDark(false)
-    } else {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('zaria-theme', 'dark')
-      setDark(true)
-    }
-  }
+  const toggle = () => setDark(prev => !prev)
 
   return (
-    <button onClick={toggle} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-      {dark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-gray-500" />}
+    <button onClick={toggle} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
+      <div className="relative w-4 h-4">
+        <Sun className={`w-4 h-4 text-amber-400 absolute inset-0 transition-all duration-300 ${dark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-0'}`} />
+        <Moon className={`w-4 h-4 text-gray-500 absolute inset-0 transition-all duration-300 ${dark ? 'opacity-0 -rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`} />
+      </div>
     </button>
   )
 }

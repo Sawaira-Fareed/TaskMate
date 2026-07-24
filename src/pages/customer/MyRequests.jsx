@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Clock, ChevronRight, ArrowLeft, X, Check, Wrench, Plug, ShoppingBag, Monitor } from 'lucide-react'
+import { Clock, ChevronRight, ArrowLeft, X, Check, Wrench, Plug, ShoppingBag, Monitor, AlertTriangle, Loader2, RefreshCw, WifiOff } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getCurrentUser } from '@/lib/auth'
+import { useNetworkStatus } from '@/hooks/useNetworkStatus'
 
 const serviceColors = {
   plumber: 'from-blue-500 to-cyan-400',
   electrician: 'from-amber-500 to-orange-400',
   grocery: 'from-emerald-500 to-teal-400',
   computer_repair: 'from-violet-500 to-purple-400',
+  ride: 'from-purple-500 to-pink-400',
 }
 
 const serviceIcons = { plumber: Wrench, electrician: Plug, grocery: ShoppingBag, computer_repair: Monitor }
@@ -18,7 +20,12 @@ export default function MyRequests() {
   const [lang, setLang] = useState(localStorage.getItem('zaria-language') || 'en')
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [activeTab, setActiveTab] = useState('active')
+  const [cancelModal, setCancelModal] = useState(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
+  const { isOnline, isSlow } = useNetworkStatus()
 
   const t = (en, ur) => (lang === 'ur' ? ur : en)
   const toggleLanguage = (l) => { setLang(l); localStorage.setItem('zaria-language', l) }
@@ -33,16 +40,30 @@ export default function MyRequests() {
     try {
       const user = await getCurrentUser()
       if (!user) return
-      const { data } = await supabase.from('requests').select('*').eq('customer_id', user.id).order('created_at', { ascending: false })
+      const { data, error: fetchError } = await supabase.from('requests').select('*').eq('customer_id', user.id).order('created_at', { ascending: false })
+      if (fetchError) throw fetchError
       setRequests(data || [])
-    } catch (err) { console.error('Failed to load:', err.message) }
-    finally { setLoading(false) }
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  async function cancelRequest(id) {
-    if (!confirm(t('Cancel this request?', 'درخواست منسوخ کریں؟'))) return
-    await supabase.from('requests').update({ status: 'cancelled' }).eq('id', id)
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r))
+  async function confirmCancel(id) {
+    setCancelLoading(true)
+    try {
+      await supabase.from('requests').update({ status: 'cancelled' }).eq('id', id)
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r))
+      setSuccessMsg(t('Request cancelled', 'درخواست منسوخ کر دی گئی'))
+      setCancelModal(null)
+      setTimeout(() => setSuccessMsg(''), 3000)
+    } catch (err) {
+      alert('Failed: ' + err.message)
+    } finally {
+      setCancelLoading(false)
+    }
   }
 
   const tabs = [
@@ -77,8 +98,35 @@ export default function MyRequests() {
   const activeTabObj = tabs.find(tab => tab.id === activeTab)
   const filtered = requests.filter(activeTabObj?.filter || (() => true))
 
+  if (!isOnline) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <WifiOff className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{t('No Internet', 'انٹرنیٹ نہیں ہے')}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('Check your connection', 'اپنا کنکشن چیک کریں')}</p>
+          <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium">
+            {t('Retry', 'دوبارہ کوشش کریں')}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
+      {isSlow && (
+        <div className="sticky top-0 z-50 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-xs text-center py-1.5">
+          {t('Slow connection', 'انٹرنیٹ سست ہے')}
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-lg text-sm font-medium animate-pulse">
+          <Check className="w-4 h-4 inline mr-1" /> {successMsg}
+        </div>
+      )}
+
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 h-16 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/customer/dashboard', { replace: true })} className="text-gray-500 dark:text-gray-400"><ArrowLeft className="w-5 h-5" /></button>
@@ -99,19 +147,44 @@ export default function MyRequests() {
           ))}
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" /></div>
-        ) : filtered.length === 0 ? (
+        {loading && (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-5 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="text-center py-20">
+            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{error}</p>
+            <button onClick={loadRequests} className="inline-flex items-center gap-1 text-sm text-purple-600 dark:text-purple-400 font-medium">
+              <RefreshCw className="w-4 h-4" /> {t('Retry', 'دوبارہ کوشش کریں')}
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length === 0 && (
           <div className="text-center py-20">
             <Clock className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('No requests found', 'کوئی درخواست نہیں ملی')}</p>
             <button onClick={() => navigate('/customer/create-request')} className="text-sm text-purple-600 dark:text-purple-400 font-medium mt-2">{t('Create Request', 'درخواست بنائیں')}</button>
           </div>
-        ) : (
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <div className="space-y-3">
             {filtered.map(req => {
               const gradient = serviceColors[req.service_type] || 'from-purple-500 to-pink-500'
-              const Icon = serviceIcons[req.service_type] || Wrench
               return (
                 <div key={req.id} className="relative bg-purple-100 dark:bg-gray-800 rounded-2xl border border-purple-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-all">
                   <div className="absolute top-0 right-0 w-[25%] h-full" style={{ clipPath: 'polygon(35% 0, 100% 0, 100% 100%, 0% 100%)' }}>
@@ -120,7 +193,7 @@ export default function MyRequests() {
                   <div className="relative p-4">
                     <button onClick={() => navigate(`/customer/request/${req.id}`, { replace: true })} className="w-full text-left">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{req.service_type || t('Request', 'درخواست')}</span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{req.is_ride ? `${req.vehicle_type || ''} Ride` : req.service_type || t('Request', 'درخواست')}</span>
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 ${statusBadge(req.status)}`}>
                           {statusIcon(req.status)}{req.status}
                         </span>
@@ -132,10 +205,14 @@ export default function MyRequests() {
                       </div>
                     </button>
                     {['pending', 'parsed', 'contacting', 'offered'].includes(req.status) && (
-                      <button onClick={(e) => { e.stopPropagation(); cancelRequest(req.id) }} className="mt-2 w-full py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
-                        {t('Cancel', 'منسوخ کریں')}
-                      </button>
-                    )}
+  <div className="mt-3 flex justify-center">
+    <button onClick={(e) => { e.stopPropagation(); setCancelModal(req.id) }}
+      className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all">
+      <X className="w-3.5 h-3.5" /> {t('Cancel', 'منسوخ کریں')}
+    </button>
+  </div>
+)}
+                 
                   </div>
                 </div>
               )
@@ -143,6 +220,27 @@ export default function MyRequests() {
           </div>
         )}
       </div>
+
+      {cancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+            <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-7 h-7 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('Cancel Request?', 'درخواست منسوخ کریں؟')}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{t('This action cannot be undone.', 'یہ عمل واپس نہیں ہو سکتا۔')}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setCancelModal(null)} disabled={cancelLoading} className="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium">
+                {t('Keep', 'رہنے دیں')}
+              </button>
+              <button onClick={() => confirmCancel(cancelModal)} disabled={cancelLoading} className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2">
+                {cancelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                {t('Cancel', 'منسوخ کریں')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

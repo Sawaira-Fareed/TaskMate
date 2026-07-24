@@ -32,10 +32,11 @@ import ProviderPricing from './pages/provider/ProviderPricing'
 import Chat from './pages/customer/Chat'
 import ProviderChat from './pages/provider/Chat'
 import AdminProUpgrades from './pages/admin/AdminProUpgrades'
-
+import NotFound from './pages/NotFound'
 import RideRequests from './pages/provider/RideRequests'
-
+import ErrorBoundary from './components/ErrorBoundary'
 import BookRide from './pages/customer/BookRide'
+import AdminNotifications from './pages/admin/AdminNotifications'
 
 
 import BecomeProvider from './pages/auth/BecomeProvider'
@@ -45,6 +46,7 @@ import BecomeProvider from './pages/auth/BecomeProvider'
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <Routes>
       {/* Public Routes - No auth required, no Layout */}
       <Route path="/" element={<Landing />} />
@@ -142,6 +144,9 @@ export default function App() {
         <Route path="/admin/platform" element={
           <ProtectedRoute allowedRoles={['admin']}><AdminPlatform /></ProtectedRoute>
         } />
+        <Route path="/admin/notifications" element={
+  <ProtectedRoute allowedRoles={['admin']}><AdminNotifications /></ProtectedRoute>
+} />
       </Route>
       <Route path="/admin/pro-upgrades" element={
   <ProtectedRoute allowedRoles={['admin']}><AdminProUpgrades /></ProtectedRoute>
@@ -151,7 +156,10 @@ export default function App() {
   <ProtectedRoute allowedRoles={['customer']}><BecomeProvider /></ProtectedRoute>
 } />
       {/* Catch-all */}
+      {/* Catch-all — 404 page */}
+<Route path="*" element={<NotFound />} />
       <Route path="*" element={<Landing />} />
     </Routes>
+    </ErrorBoundary>
   );
 }
