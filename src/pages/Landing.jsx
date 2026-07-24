@@ -134,7 +134,7 @@ setUserRole(roles[0] || 'customer')
     { en: 'Which cities?', ur: 'کون سے شہر؟', ansEn: 'Currently Jand, Punjab.', ansUr: 'فی الحال جند، پنجاب۔' },
   ]
 
-  return (
+return (
     <div className="min-h-screen bg-white dark:bg-gray-950" dir={lang === 'ur' ? 'rtl' : 'ltr'}>
       {/* Navbar */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-gray-800' : 'bg-transparent'}`}>
@@ -180,48 +180,65 @@ setUserRole(roles[0] || 'customer')
                 </>
               )}
             </div>
-            <button className="md:hidden text-gray-600 dark:text-gray-300" onClick={() => setMobileMenu(!mobileMenu)}>{mobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
+            <button className="md:hidden text-gray-600 dark:text-gray-300" onClick={() => setMobileMenu(!mobileMenu)}>
+              {mobileMenu ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
-        {mobileMenu && (
-          <div className="md:hidden bg-white dark:bg-gray-900 border-t dark:border-gray-800 px-4 py-4 space-y-3">
-            <a href="#how-it-works" className="block text-sm py-2 text-gray-600 dark:text-gray-300">{t('How it Works', 'کیسے کام کرتا ہے')}</a>
-            <a href="#services" className="block text-sm py-2 text-gray-600 dark:text-gray-300">{t('Services', 'خدمات')}</a>
-            <a href="#reviews" className="block text-sm py-2 text-gray-600 dark:text-gray-300">{t('Reviews', 'جائزے')}</a>
-            <button onClick={scrollToContact} className="block text-sm py-2 text-gray-600 dark:text-gray-300 w-full text-left">{t('Contact', 'رابطہ')}</button>
-            <div className="flex gap-2 pt-2">
-             {isAuthenticated ? (
-  <div className="flex gap-2">
-    <button onClick={handleDashboardClick} className="flex-1 text-center text-sm text-white bg-purple-600 rounded-lg py-2.5">{t('Dashboard', 'ڈیش بورڈ')}</button>
-    <button
-      onClick={async () => {
-        await supabase.auth.signOut()
-        setIsAuthenticated(false)
-        setUserRole(null)
-        navigate('/')
-      }}
-      className="flex-1 text-center text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg py-2.5"
-    >
-      {t('Sign Out', 'سائن آؤٹ')}
-    </button>
-  </div>
-) : (
-                <>
-                  <Link to="/login" className="flex-1 text-center text-sm border border-gray-300 dark:border-gray-700 rounded-lg py-2.5 text-gray-700 dark:text-gray-300">{t('Login', 'لاگ ان')}</Link>
-                  <Link to="/register" className="flex-1 text-center text-sm text-white bg-purple-600 rounded-lg py-2.5">{t('Get Started', 'شروع کریں')}</Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
 
-     
- {/* Hero */}
+      {/* Mobile Bottom Sheet */}
+      {mobileMenu && (
+        <>
+          <div className="md:hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl animate-slide-up">
+            <div className="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mt-3 mb-4" />
+            <div className="px-6 pb-8 space-y-1">
+              <a href="#how-it-works" onClick={() => setMobileMenu(false)} className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                <Target className="w-5 h-5 text-purple-500" /> {t('How it Works', 'کیسے کام کرتا ہے')}
+              </a>
+              <a href="#services" onClick={() => setMobileMenu(false)} className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                <Wrench className="w-5 h-5 text-purple-500" /> {t('Services', 'خدمات')}
+              </a>
+              <a href="#reviews" onClick={() => setMobileMenu(false)} className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                <Star className="w-5 h-5 text-purple-500" /> {t('Reviews', 'جائزے')}
+              </a>
+              <button onClick={() => { scrollToContact(); setMobileMenu(false) }} className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                <Phone className="w-5 h-5 text-purple-500" /> {t('Contact', 'رابطہ')}
+              </button>
+              
+              <div className="pt-4 mt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
+                {isAuthenticated ? (
+                  <>
+                    <button onClick={() => { handleDashboardClick(); setMobileMenu(false) }} className="w-full py-3.5 bg-purple-600 text-white rounded-xl text-base font-semibold">
+                      <LayoutDashboard className="w-5 h-5 inline mr-2" /> {t('Dashboard', 'ڈیش بورڈ')}
+                    </button>
+                    <button onClick={async () => { await supabase.auth.signOut(); setIsAuthenticated(false); setUserRole(null); setMobileMenu(false); navigate('/') }} className="w-full py-3.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-base font-medium">
+                      {t('Sign Out', 'سائن آؤٹ')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/register" onClick={() => setMobileMenu(false)} className="block w-full py-3.5 bg-purple-600 text-white rounded-xl text-base font-semibold text-center">
+                      {t('Get Started', 'شروع کریں')}
+                    </Link>
+                    <Link to="/login" onClick={() => setMobileMenu(false)} className="block w-full py-3.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-base font-medium text-center">
+                      {t('Login', 'لاگ ان')}
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+     {/* Hero */}
 <section className="pt-28 pb-20 px-4">
   <div className="max-w-7xl mx-auto">
     <div className="grid md:grid-cols-2 gap-12 items-center">
-      <div>
+      {/* Left Content */}
+      <div className="order-2 md:order-1 text-center md:text-left">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
           {t('Find Trusted Local Services', 'قابل اعتماد مقامی خدمات حاصل کریں')}<br />
           <span className="text-purple-600">{t('Without Phone Calls', 'بغیر فون کالز کے')}</span>
@@ -229,7 +246,7 @@ setUserRole(roles[0] || 'customer')
         <p className="text-lg text-gray-500 dark:text-gray-400 mt-6 leading-relaxed">
           {t('Book plumbers, electricians, grocery delivery and more. Set your budget, receive offers from verified providers, and hire with confidence.', 'پلمبر، الیکٹریشن، گروسری ڈیلیوری اور مزید بک کریں۔ اپنا بجٹ سیٹ کریں، تصدیق شدہ پرووائیڈرز سے پیشکشیں وصول کریں، اور اعتماد کے ساتھ خدمات حاصل کریں۔')}
         </p>
-        <div className="flex flex-wrap gap-3 mt-8">
+        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-8">
           {isAuthenticated ? (
             <button onClick={handleDashboardClick} className="inline-flex items-center gap-2 px-6 py-3.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-all text-sm">
               <LayoutDashboard className="w-4 h-4" /> {t('Go to Dashboard', 'ڈیش بورڈ پر جائیں')}
@@ -245,22 +262,24 @@ setUserRole(roles[0] || 'customer')
             </>
           )}
         </div>
-        <div className="flex items-center gap-6 mt-8 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex items-center justify-center md:justify-start gap-6 mt-8 text-sm text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1"><Star className="w-4 h-4 text-amber-400 fill-amber-400" /> 4.8 {t('Rating', 'ریٹنگ')}</span>
           <span className="flex items-center gap-1"><Shield className="w-4 h-4 text-emerald-500" /> {t('Verified', 'تصدیق شدہ')}</span>
           <span className="flex items-center gap-1"><Zap className="w-4 h-4 text-purple-500" /> {t('Fast', 'تیز')}</span>
         </div>
       </div>
-      <div className="hidden md:flex justify-center items-center">
+
+      {/* Right Image - Visible on both mobile and desktop */}
+      <div className="order-1 md:order-2 flex justify-center items-center">
         <img 
           src="/images/starting.jpg" 
           alt="Zaria" 
-          className="w-full max-w-md h-auto object-contain rounded-2xl"
+          className="w-full max-w-[280px] sm:max-w-md h-auto object-contain rounded-2xl"
           onError={(e) => {
             e.target.style.display = 'none'
             const fallback = document.createElement('div')
-            fallback.className = 'w-full max-w-md h-80 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center'
-            fallback.innerHTML = '<div class="text-center"><div class="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4"><span class="text-white font-bold text-3xl">Z</span></div><p class="text-purple-600 font-semibold text-lg">Zaria</p><p class="text-gray-500 text-sm">Your Medium to Everything</p></div>'
+            fallback.className = 'w-full max-w-[280px] sm:max-w-md h-60 sm:h-80 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 rounded-2xl flex items-center justify-center'
+            fallback.innerHTML = '<div class="text-center"><div class="w-16 h-16 sm:w-20 sm:h-20 bg-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4"><span class="text-white font-bold text-2xl sm:text-3xl">Z</span></div><p class="text-purple-600 dark:text-purple-400 font-semibold text-base sm:text-lg">Zaria</p><p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Your Medium to Everything</p></div>'
             e.target.parentElement.appendChild(fallback)
           }}
         />
